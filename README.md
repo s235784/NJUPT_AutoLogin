@@ -1,2 +1,76 @@
 # NJUPT_AutoLogin
- 南京邮电大学 路由器自动登录校园网脚本
+南京邮电大学 自动登录校园网脚本，适合挂在路由器上定时执行
+
+>  本脚本更详细的教程请移步到[我的博客](https://nuotian.furry.pro/blog/archives/204#header-id-4)中查看
+
+## 硬件准备
+
+* 一台刷了第三方固件的路由器（如OpenWRT）
+
+## 用法
+
+首先下载[Release](https://github.com/s235784/NJUPT_AutoLogin/releases)中的脚本，然后上传到路由器中。
+进入路由器后台，记住首页出现的**IPv4 WAN 状态**中的**eth口**，如 我这里是eth0.2。
+
+![1](https://raw.githubusercontent.com/s235784/NJUPT_AutoLogin/main/doc/1.png)
+
+然后在路由器的计划任务中添加以下命令，并根据实际情况修改这条命令。
+
+```
+*/5 * * * * sh /xxx/NJUPT-AutoLogin.sh eth口 运营商 账号 密码
+```
+
+> **注意**
+> * **/xxx/NJUPT-AutoLogin.sh** 更换成脚本实际的路径
+> * **eth口** 更换成上一步中相应的值
+> * **账号和密码** 就是校园网登录界面输入的账号和密码
+> * **运营商** 请看下表
+
+| 运营商 | 替换成 |
+| ------ | ------ |
+| 校园网 | njupt  |
+| 电信   | ctcc  |
+| 移动   | cmcc  |
+
+完整的命令如图
+
+![2](https://raw.githubusercontent.com/s235784/NJUPT_AutoLogin/main/doc/2.png)
+
+确认无误后，保存。之后路由器就会每5分钟确认一次网络状态，如果在没断网的时间内没有登录校园网，路由器就会自动登录了。
+
+## 接口分析
+
+打开校园网的登录界面，打开浏览器调试，勾选Network选项中的Preserve log，然后正常登录校园网，就能看到在登录时浏览器向10.10.244.11:801发送了POST请求。
+
+![3](https://raw.githubusercontent.com/s235784/NJUPT_AutoLogin/main/doc/3.png)
+
+进一步打开Payload查看POST数据，可以明显看到DDDDD后面的参数就包含了账号，upass就是密码。
+
+![4](https://raw.githubusercontent.com/s235784/NJUPT_AutoLogin/main/doc/4.png)
+
+在进一步的测试中得知，DDDDD的值的格式为 ,0, + 账号 + 运营商标识，其中的运营商标识校园网为空，电信为@njxy，移动为@cmcc。
+然后把得到的api写到Apifox中测试，成功登录。
+
+![5](https://raw.githubusercontent.com/s235784/NJUPT_AutoLogin/main/doc/5.png)
+
+## 参考
+
+* [南京邮电大学_校园网/电信宽带/移动宽带_路由器共享WiFi+自动认证](https://github.com/kaijianyi/NJUPT_NET)
+* [校园网自动登录全平台解决方案](https://zhuanlan.zhihu.com/p/364016452)
+
+## License
+``` license
+ Copyright 2021, NuoTian       
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+```
