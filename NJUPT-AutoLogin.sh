@@ -16,10 +16,12 @@ passwd=$4
 
 login=
 
+isp_code=
+
 # 检测网络连接畅通
 network()
 {
-  status=$(curl -s -m 2 -IL baidu.com)
+  status=$(curl -s -IL baidu.com)
   http_code=$(echo "${status}"|grep "200")
   connection=$(echo "${status}"|grep "close")
 
@@ -78,20 +80,24 @@ loginNet() {
 	then
 	   printf "运营商为电信\n"
 		 login="%2C0%2C${name}%40njxy"
+     isp_code="%40njxy"
 	elif [ "$isp" = "cmcc" ]
 	then
 	   printf "运营商为移动\n"
 		 login="%2C0%2C${name}%40cmcc"
+     isp_code="%40cmcc"
 	elif [ "$isp" = "njupt" ]
 	then
 	   printf "运营商为校园网\n"
 		 login="%2C0%2C${name}"
+     isp_code=""
 	 else
 		 printf "无法识别运营商\n"
 		 exit 0
 	fi
 
 	curl "http://10.10.244.11:801/eportal/?c=ACSetting&a=Login&protocol=http:&hostname=10.10.244.11&iTermType=1&wlanuserip=${ip}&wlanacip=10.255.252.150&wlanacname=XL-BRAS-SR8806-X&mac=00-00-00-00-00-00&ip=${ip}&enAdvert=0&queryACIP=0&loginMethod=1" \
+  --cookie "ISP_select=${isp_code}; md5_login2=${login}%7C${passwd}" \
 	--data "DDDDD=${login}&upass=${passwd}&R1=0&R2=0&R3=0&R6=0&para=00&0MKKey=123456&buttonClicked=&redirect_url=&err_flag=&username=&password=&user=&cmd=&Login=&v6ip="
 
 	printf "登录成功\n"
