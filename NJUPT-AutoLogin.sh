@@ -1,27 +1,70 @@
 #!/bin/sh
 
-# 脚本使用格式 如bash NJUPT-AutoLogin.sh eth0.2 ctcc B21012250 12345678
+#     _   _             _______  _
+#    |  \| | _   _   ___  | |    _   __ _  _ __
+#    | . ` || | | | / _ \ | |   | | / _` || '_ \
+#    |_| \_| \__,_| \___/ |_|   |_| \__,_||_| |_|
+#
+#    Author: NuoTian (https://github.com/s235784)
+#    Version: 1.0.2
+
+# 脚本使用格式 如bash NJUPT-AutoLogin.sh -e eth0.2 -i ctcc -l B21012250 12345678
+
+help() {
+  echo "命令格式:"
+  echo "NJUPT-AutoLogin.sh [-e eth] [-i isp] [-l] username password"
+  echo "参数描述:"
+  echo "eth，路由器ETH口"
+  echo "isp，运营商 校园网为njupt，电信为ctcc，移动为cmcc"
+  echo "l，仅在规定时间内尝试自动登录"
+  echo "username，账号"
+  echo "password，密码"
+  exit -1
+}
 
 # eth口
-eth=$1
+eth="eth0.1"
 
 # 运营商 校园网为njupt，电信为ctcc，移动为cmcc
-isp=$2
+isp="njupt"
+
+# 是否只能在规定时间内联网
+limit="false"
+
+while getopts 'e:i:l:h' OPT; do
+    case $OPT in
+        e) eth="$OPTARG";;
+        i) isp="$OPTARG";;
+        l) limit="true";;
+        h) help;;
+        ?) help;;
+    esac
+done
+
+if [ "$limit" = "false" ]
+then
+  shift $(($OPTIND - 1))
+else
+  shift $(($OPTIND - 2))
+fi
 
 # 账号
-name=$3
+name=$1
 
 # 密码
-passwd=$4
+passwd=$2
 
-login=
-
-isp_code=
+echo "eth口：$eth"
+echo "运营商："$isp
+echo "账号：$name"
+echo "密码：$passwd"
+echo "账号是否会断网：$limit"
+echo ""
 
 # 检测网络连接畅通
 network()
 {
-  status=$(curl -s -IL baidu.com)
+  status=$(curl -s -m 2 -IL baidu.com)
   http_code=$(echo "${status}"|grep "200")
   connection=$(echo "${status}"|grep "close")
 
@@ -80,24 +123,20 @@ loginNet() {
 	then
 	   printf "运营商为电信\n"
 		 login="%2C0%2C${name}%40njxy"
-     isp_code="%40njxy"
 	elif [ "$isp" = "cmcc" ]
 	then
 	   printf "运营商为移动\n"
 		 login="%2C0%2C${name}%40cmcc"
-     isp_code="%40cmcc"
 	elif [ "$isp" = "njupt" ]
 	then
 	   printf "运营商为校园网\n"
 		 login="%2C0%2C${name}"
-     isp_code=""
 	 else
 		 printf "无法识别运营商\n"
 		 exit 0
 	fi
 
 	curl "http://10.10.244.11:801/eportal/?c=ACSetting&a=Login&protocol=http:&hostname=10.10.244.11&iTermType=1&wlanuserip=${ip}&wlanacip=10.255.252.150&wlanacname=XL-BRAS-SR8806-X&mac=00-00-00-00-00-00&ip=${ip}&enAdvert=0&queryACIP=0&loginMethod=1" \
-  --cookie "ISP_select=${isp_code}; md5_login2=${login}%7C${passwd}" \
 	--data "DDDDD=${login}&upass=${passwd}&R1=0&R2=0&R3=0&R6=0&para=00&0MKKey=123456&buttonClicked=&redirect_url=&err_flag=&username=&password=&user=&cmd=&Login=&v6ip="
 
 	printf "登录成功\n"
@@ -114,41 +153,57 @@ start() {
 	fi
 }
 
-week=$(date +%w)
-time=$(date +%H%M)
+checkTime() {
+  week=$(date +%w)
+  time=$(date +%H%M)
 
-# 周一至周四
-if [ "$week" -ge 1 ] && [ "$week" -le 4 ]
+  # 周一至周四
+  if [ "$week" -ge 1 ] && [ "$week" -le 4 ]
+  then
+  	# 8：10到23点之间
+  	if [ "$time" -ge 0810 ] && [ "$time" -le 2300 ]
+  	then
+  			printf "允许时间内，开始准备登录\n"
+  			start
+    else
+        printf "不在允许时间内\n"
+  	fi
+  # 周五
+  elif [ "$week" -eq 5 ]
+  then
+  	# 8：10之后
+  	if [ "$time" -ge 0810 ]
+  	then
+  			printf "允许时间内，开始准备登录\n"
+  			start
+    else
+        printf "不在允许时间内\n"
+  	fi
+  # 周六全天
+  elif [ "$week" -eq 6 ]
+  then
+  	printf "允许时间内，开始准备登录\n"
+  	start
+  # 周日
+  elif [ "$week" -eq 0 ]
+  then
+  	# 23点之前
+  	if [ "$time" -le 2300 ]
+  	then
+  			printf "允许时间内，开始准备登录\n"
+  			start
+    else
+        printf "不在允许时间内\n"
+  	fi
+  fi
+}
+
+if [ "$limit" = "false" ]
 then
-	# 8：10到23点之间
-	if [ "$time" -ge 0810 ] && [ "$time" -le 2300 ]
-	then
-			printf "允许时间内，开始准备登录\n"
-			start
-	fi
-# 周五
-elif [ "$week" -eq 5 ]
-then
-	# 8：10之后
-	if [ "$time" -ge 0810 ]
-	then
-			printf "允许时间内，开始准备登录\n"
-			start
-	fi
-# 周六全天
-elif [ "$week" -eq 6 ]
-then
-	printf "允许时间内，开始准备登录\n"
-	start
-# 周日
-elif [ "$week" -eq 0 ]
-then
-	# 23点之前
-	if [ "$time" -le 2300 ]
-	then
-			printf "允许时间内，开始准备登录\n"
-			start
-	fi
+  printf "没有时间限制，开始准备登录\n"
+  start
+else
+  checkTime
 fi
 
 printf "完成\n"
