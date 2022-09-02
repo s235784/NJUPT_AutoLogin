@@ -6,7 +6,7 @@
 #    |_| \_| \__,_| \___/ |_|   |_| \__,_||_| |_|
 #
 #    Author: NuoTian (https://github.com/s235784)
-#    Version: 1.0.3
+#    Version: 1.0.4
 
 # 脚本使用格式 如bash NJUPT-AutoLogin.sh -e eth0.2 -i ctcc -l B21012250 12345678
 
@@ -24,9 +24,12 @@ wlanacip="10.255.252.150"
 
 wlanacname="XL-BRAS-SR8806-X"
 
+# 忽略未插入网线的错误状态
+ignore_disconnet="false"
+
 help() {
   echo "登录命令："
-  echo "NJUPT-AutoLogin.sh [-e eth] [-i isp] [-l] [-s] username password"
+  echo "NJUPT-AutoLogin.sh [-e eth] [-i isp] [-l] [-s] [-d] username password"
   echo "退出命令："
   echo "NJUPT-AutoLogin.sh [-e eth] [-s] -o"
   echo "参数描述："
@@ -34,6 +37,7 @@ help() {
   echo "isp，运营商 校园网为njupt，电信为ctcc，移动为cmcc"
   echo "l，仅在规定时间内尝试自动登录"
   echo "s，三牌楼校区须添加此参数"
+  echo "d，忽略网线未插入的错误状态"
   echo "username，账号"
   echo "password，密码"
   exit 0
@@ -48,18 +52,20 @@ logout() {
 	else
 		printf "当前设备的ip地址为${ip}\n"
 	fi
-  curl "http://10.10.244.11:801/eportal/?c=ACSetting&a=Logout&wlanuserip=${ip}&wlanacip=${wlanacip}0&wlanacname=${wlanacname}&hostname=10.10.244.11&queryACIP=0"
+  curl "http://10.10.244.11:801/eportal/?c=ACSetting&a=Logout&wlanuserip=${ip}&wlanacip=${wlanacip}0&wlanacname=${wlanacname}&hostname=10.10.244.11&queryACIP=0" \
+  --interface ${eth}
   printf "已退出校园网登录\n"
   exit 0
 }
 
-while getopts 'e:i:lsoh' OPT; do
+while getopts 'e:i:lsdoh' OPT; do
     case $OPT in
         e) eth="$OPTARG";;
         i) isp="$OPTARG";;
         l) limit="true";;
         s) wlanacip="10.255.253.118"
            wlanacname="SPL-BRAS-SR8806-X";;
+        d) ignore_disconnet="true";;
         o) logout;;
         h) help;;
         ?) help;;
@@ -84,13 +90,20 @@ echo ""
 # 检测网络连接畅通
 network()
 {
-  status=$(curl -s -m 2 -IL baidu.com)
+  status=$(curl --interface ${eth} -s -m 2 -IL baidu.com)
   http_code=$(echo "${status}"|grep "200")
   connection=$(echo "${status}"|grep "close")
 
   if [ "$http_code" = "" ]
   then
     printf "网络断开了\n"
+
+    if [ "${ignore_disconnet}" = "true" ]
+    then
+      printf "已设置忽略该错误，继续登录命令\n"
+      return 0
+    fi
+
     exit 0
   fi
 
@@ -157,7 +170,8 @@ loginNet() {
 	fi
 
 	curl "http://10.10.244.11:801/eportal/?c=ACSetting&a=Login&protocol=http:&hostname=10.10.244.11&iTermType=1&wlanuserip=${ip}&wlanacip=${wlanacip}&wlanacname=${wlanacname}&mac=00-00-00-00-00-00&ip=${ip}&enAdvert=0&queryACIP=0&loginMethod=1" \
-	--data "DDDDD=${login}&upass=${passwd}&R1=0&R2=0&R3=0&R6=0&para=00&0MKKey=123456&buttonClicked=&redirect_url=&err_flag=&username=&password=&user=&cmd=&Login=&v6ip="
+	--data "DDDDD=${login}&upass=${passwd}&R1=0&R2=0&R3=0&R6=0&para=00&0MKKey=123456&buttonClicked=&redirect_url=&err_flag=&username=&password=&user=&cmd=&Login=&v6ip=" \
+  --interface ${eth}
 
 	printf "登录成功\n"
 }
