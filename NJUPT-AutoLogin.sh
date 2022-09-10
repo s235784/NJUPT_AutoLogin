@@ -6,7 +6,7 @@
 #    |_| \_| \__,_| \___/ |_|   |_| \__,_||_| |_|
 #
 #    Author: NuoTian (https://github.com/s235784)
-#    Version: 1.0.4
+#    Version: 1.0.5
 
 # 脚本使用格式 如bash NJUPT-AutoLogin.sh -e eth0.2 -i ctcc -l B21012250 12345678
 
@@ -101,7 +101,14 @@ network()
     if [ "${ignore_disconnet}" = "true" ]
     then
       printf "已设置忽略该错误，继续登录命令\n"
-      return 0
+      if [ "$connection" = "" ]
+      then
+        # 网络通畅
+        return 1
+      else
+        # 未登录
+        return 0
+      fi
     fi
 
     exit 0
