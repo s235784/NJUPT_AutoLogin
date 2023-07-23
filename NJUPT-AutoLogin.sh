@@ -6,7 +6,8 @@
 #    |_| \_| \__,_| \___/ |_|   |_| \__,_||_| |_|
 #
 #    Author: NuoTian (https://github.com/s235784)
-#    Version: 1.0.5
+#    Repository: https://github.com/s235784/NJUPT_AutoLogin
+#    Version: 1.1.0
 
 # 脚本使用格式 如bash NJUPT-AutoLogin.sh -e eth0.2 -i ctcc -l B21012250 12345678
 
@@ -30,7 +31,7 @@ ignore_disconnet="false"
 help() {
   echo "登录命令："
   echo "NJUPT-AutoLogin.sh [-e eth] [-i isp] [-l] [-s] [-d] username password"
-  echo "退出命令："
+  echo "登出命令："
   echo "NJUPT-AutoLogin.sh [-e eth] [-s] -o"
   echo "参数描述："
   echo "eth，路由器ETH口"
@@ -52,9 +53,16 @@ logout() {
 	else
 		printf "当前设备的ip地址为${ip}\n"
 	fi
-  curl "http://10.10.244.11:801/eportal/?c=ACSetting&a=Logout&wlanuserip=${ip}&wlanacip=${wlanacip}0&wlanacname=${wlanacname}&hostname=10.10.244.11&queryACIP=0" \
-  --interface ${eth}
-  printf "已退出校园网登录\n"
+  result=$(curl --request GET "http://10.10.244.11:801/eportal/portal/logout?callback=dr1003&login_method=1&user_account=drcom&user_password=123&wlan_user_ip=${ip}&&wlan_user_ipv6=&waln_vlan_id=0&wlan_user_mac=000000000000&wlan_ac_ip=&wlan_ac_name=" \
+  --connect-timeout 5 \
+  --interface ${eth})
+  printf "\n"
+  if [[ $result =~ "成功" ]]
+  then
+    printf "已退出校园网登录\n"
+  else
+    printf "接口请求错误：${result}\n如果问题持续出现，请在GitHub上提交Issue\n"
+  fi
   exit 0
 }
 
@@ -91,12 +99,19 @@ echo ""
 network()
 {
   status=$(curl --interface ${eth} -s -m 2 -IL baidu.com)
+  # 请求直接返回空
+  if [ "$status" = "" ]
+  then
+    printf "无法判断网络状态，尝试登录\n"
+    return 0
+  fi
+
   http_code=$(echo "${status}"|grep "200")
   connection=$(echo "${status}"|grep "close")
 
   if [ "$http_code" = "" ]
   then
-    printf "网络断开了\n"
+    printf "网络已断开\n"
 
     if [ "${ignore_disconnet}" = "true" ]
     then
@@ -176,11 +191,16 @@ loginNet() {
 		 exit 0
 	fi
 
-	curl "http://10.10.244.11:801/eportal/?c=ACSetting&a=Login&protocol=http:&hostname=10.10.244.11&iTermType=1&wlanuserip=${ip}&wlanacip=${wlanacip}&wlanacname=${wlanacname}&mac=00-00-00-00-00-00&ip=${ip}&enAdvert=0&queryACIP=0&loginMethod=1" \
-	--data "DDDDD=${login}&upass=${passwd}&R1=0&R2=0&R3=0&R6=0&para=00&0MKKey=123456&buttonClicked=&redirect_url=&err_flag=&username=&password=&user=&cmd=&Login=&v6ip=" \
-  --interface ${eth}
-
-	printf "登录成功\n"
+	result=$(curl --request GET "http://10.10.244.11:801/eportal/portal/login?callback=dr1003&login_method=1&user_account=${login}&user_password=${passwd}&wlan_user_ip=${ip}&wlan_user_ipv6=&wlan_user_mac=000000000000&wlan_ac_ip=&wlan_ac_name=" \
+  --connect-timeout 5 \
+  --interface ${eth})
+  printf "\n"
+  if [[ $result =~ "成功" ]]
+  then
+    printf "已成功登录校园网\n"
+  else
+    printf "接口请求错误：${result}\n如果问题持续出现，请在GitHub上提交Issue\n"
+  fi
 }
 
 # 开始登录
