@@ -7,7 +7,7 @@
 #
 #    Author: NuoTian (https://github.com/s235784)
 #    Repository: https://github.com/s235784/NJUPT_AutoLogin
-#    Version: 1.1.0
+#    Version: 1.1.1
 
 # 脚本使用格式 如bash NJUPT-AutoLogin.sh -e eth0.2 -i ctcc -l B21012250 12345678
 
@@ -53,7 +53,7 @@ logout() {
 	else
 		printf "当前设备的ip地址为${ip}\n"
 	fi
-  result=$(curl --request GET "http://10.10.244.11:801/eportal/portal/logout?callback=dr1003&login_method=1&user_account=drcom&user_password=123&wlan_user_ip=${ip}&&wlan_user_ipv6=&waln_vlan_id=0&wlan_user_mac=000000000000&wlan_ac_ip=&wlan_ac_name=" \
+  result=$(curl -k --request GET "https://10.10.244.11:802/eportal/portal/logout?callback=dr1003&login_method=1&user_account=drcom&user_password=123&wlan_user_ip=${ip}&&wlan_user_ipv6=&waln_vlan_id=0&wlan_user_mac=000000000000&wlan_ac_ip=&wlan_ac_name=" \
   --connect-timeout 5 \
   --interface ${eth})
   printf "\n"
@@ -191,7 +191,7 @@ loginNet() {
 		 exit 0
 	fi
 
-	result=$(curl --request GET "http://10.10.244.11:801/eportal/portal/login?callback=dr1003&login_method=1&user_account=${login}&user_password=${passwd}&wlan_user_ip=${ip}&wlan_user_ipv6=&wlan_user_mac=000000000000&wlan_ac_ip=&wlan_ac_name=" \
+	result=$(curl -k --request GET "https://10.10.244.11:802/eportal/portal/login?callback=dr1003&login_method=1&user_account=${login}&user_password=${passwd}&wlan_user_ip=${ip}&wlan_user_ipv6=&wlan_user_mac=000000000000&wlan_ac_ip=&wlan_ac_name=" \
   --connect-timeout 5 \
   --interface ${eth})
   printf "\n"
@@ -221,8 +221,8 @@ checkTime() {
   # 周一至周四
   if [ "$week" -ge 1 ] && [ "$week" -le 4 ]
   then
-  	# 8：10到23点之间
-  	if [ "$time" -ge 0810 ] && [ "$time" -le 2300 ]
+  	# 7：01到23：29之间
+  	if [ "$time" -ge 0701 ] && [ "$time" -le 2329 ]
   	then
   			printf "允许时间内，开始准备登录\n"
   			start
@@ -232,8 +232,8 @@ checkTime() {
   # 周五
   elif [ "$week" -eq 5 ]
   then
-  	# 8：10之后
-  	if [ "$time" -ge 0810 ]
+  	# 7：01之后
+  	if [ "$time" -ge 0701 ]
   	then
   			printf "允许时间内，开始准备登录\n"
   			start
@@ -248,8 +248,8 @@ checkTime() {
   # 周日
   elif [ "$week" -eq 0 ]
   then
-  	# 23点之前
-  	if [ "$time" -le 2300 ]
+  	# 23：29之前
+  	if [ "$time" -le 2329 ]
   	then
   			printf "允许时间内，开始准备登录\n"
   			start
