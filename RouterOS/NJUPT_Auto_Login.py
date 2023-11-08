@@ -113,12 +113,12 @@ with open(config_path, "r", encoding="UTF-8") as config_file:
             if interface == login["ether"]:
                 # 判断是否在能登录的时间内
                 if login["time_limit"] and not time_flag:
-                    logger.info(f"{interface} 不在允许登录的时间段内")
+                    logger.debug(f"{interface} 不在允许登录的时间段内")
                     continue
 
                 # 检查网口网络状态
                 if check_network(login["test_address"]):
-                    logger.info(f"{interface} 网络正常")
+                    logger.debug(f"{interface} 网络正常")
                     continue
 
                 # 去除IP后面的掩码部分
