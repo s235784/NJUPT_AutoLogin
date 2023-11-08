@@ -1,0 +1,25 @@
+{
+  "login": [
+    {
+      "test_address": "https://connect.rom.miui.com/generate_204",
+      "ether": "eth0",
+      "isp": "njupt",
+      "username": "B21010101",
+      "password": "123456789",
+      "time_limit": true
+    },
+    {
+      "test_address": "https://test.ustc.edu.cn",
+      "ether": "eth1",
+      "isp": "ctcc",
+      "username": "B21010101",
+      "password": "123456789",
+      "time_limit": false
+    }
+  ],
+  "routeros": {
+    "ip": "192.168.0.1",
+    "username": "admin",
+    "password": ""
+  }
+}
