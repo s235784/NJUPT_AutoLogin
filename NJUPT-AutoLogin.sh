@@ -7,7 +7,7 @@
 #
 #    Author: NuoTian (https://github.com/s235784)
 #    Repository: https://github.com/s235784/NJUPT_AutoLogin
-#    Version: 1.1.1
+#    Version: 1.1.2
 
 # 脚本使用格式 如bash NJUPT-AutoLogin.sh -e eth0.2 -i ctcc -l B21012250 12345678
 
@@ -28,14 +28,17 @@ wlanacname="XL-BRAS-SR8806-X"
 # 忽略未插入网线的错误状态
 ignore_disconnet="false"
 
+logout_flag="false"
+
 help() {
   echo "登录命令："
-  echo "NJUPT-AutoLogin.sh [-e eth] [-i isp] [-l] [-s] [-d] username password"
+  echo "NJUPT-AutoLogin.sh [-e eth] [-i isp] [-p ip] [-l] [-s] [-d] username password"
   echo "登出命令："
-  echo "NJUPT-AutoLogin.sh [-e eth] [-s] -o"
+  echo "NJUPT-AutoLogin.sh [-e eth] [-p ip] [-s] -o"
   echo "参数描述："
   echo "eth，路由器ETH口"
   echo "isp，运营商 校园网为njupt，电信为ctcc，移动为cmcc"
+  echo "ip，手动指定向登录接口发送的IP地址"
   echo "l，仅在规定时间内尝试自动登录"
   echo "s，三牌楼校区须添加此参数"
   echo "d，忽略网线未插入的错误状态"
@@ -44,15 +47,23 @@ help() {
   exit 0
 }
 
-logout() {
-  ip=$(ifconfig "${eth}" | grep inet | awk '{print $2}' | tr -d "addr:")
-	if [ ! "$ip" ]
+# 获取设备IP地址
+ip() {
+  if [ ! "$ip" ]
 	then
-		printf "获取ip地址失败\n"
-		exit 0
-	else
-		printf "当前设备的ip地址为${ip}\n"
+    ip=$(ifconfig "${eth}" | grep inet | awk '{print $2}' | tr -d "addr:")
+    if [ ! "$ip" ]
+  	then
+  		printf "获取ip地址失败\n"
+  		exit 0
+    fi
 	fi
+  printf "当前设备的ip地址为${ip}\n"
+}
+
+# 退出登录
+logout() {
+  ip
   result=$(curl -k --request GET "https://10.10.244.11:802/eportal/portal/logout?callback=dr1003&login_method=1&user_account=drcom&user_password=123&wlan_user_ip=${ip}&&wlan_user_ipv6=&waln_vlan_id=0&wlan_user_mac=000000000000&wlan_ac_ip=&wlan_ac_name=" \
   --connect-timeout 5 \
   --interface ${eth})
@@ -66,19 +77,26 @@ logout() {
   exit 0
 }
 
-while getopts 'e:i:lsdoh' OPT; do
+while getopts 'e:i:p:lsdoh' OPT; do
     case $OPT in
         e) eth="$OPTARG";;
         i) isp="$OPTARG";;
+        p) ip="$OPTARG";;
         l) limit="true";;
         s) wlanacip="10.255.253.118"
            wlanacname="SPL-BRAS-SR8806-X";;
         d) ignore_disconnet="true";;
-        o) logout;;
+        o) logout_flag="true";;
         h) help;;
         ?) help;;
     esac
 done
+
+if [ "$logout_flag" = "true" ]
+then
+  ip
+  logout
+fi
 
 shift $(($OPTIND - 1))
 
@@ -89,10 +107,16 @@ name=$1
 passwd=$2
 
 echo "eth口：$eth"
-echo "运营商："$isp
+echo "运营商：$isp"
 echo "账号：$name"
 echo "密码：$passwd"
 echo "账号是否会断网：$limit"
+
+if [ "$ip" ]
+then
+  echo "指定的IP地址：$ip"
+fi
+
 echo ""
 
 # 检测网络连接畅通
@@ -165,14 +189,7 @@ loginNet() {
 		exit 0
 	fi
 
-	ip=$(ifconfig "${eth}" | grep inet | awk '{print $2}' | tr -d "addr:")
-	if [ ! "$ip" ]
-	then
-		printf "获取ip地址失败\n"
-		exit 0
-	else
-		printf "当前设备的ip地址为${ip}\n"
-	fi
+	ip
 
 	if [ "$isp" = "ctcc" ]
 	then
@@ -214,6 +231,7 @@ start() {
 	fi
 }
 
+# 检查当前时间
 checkTime() {
   week=$(date +%w)
   time=$(date +%H%M)
