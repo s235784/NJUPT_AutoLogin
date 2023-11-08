@@ -10,6 +10,7 @@
 import sys
 import ssl
 import json
+import logging
 import argparse
 import datetime
 import contextlib
@@ -37,8 +38,8 @@ def login_network(ip_, isp_, username_, password_):
 
         with contextlib.closing(urllib.request.urlopen(url, timeout=5)) as response:
             if response.getcode() == 200:
-                content = response.read().decode('utf-8')
-                return "成功" in content, content
+                content_ = response.read().decode('utf-8')
+                return "成功" in content_, content_
             else:
                 return False, None
     except urllib.error.URLError as e:
@@ -48,11 +49,24 @@ def login_network(ip_, isp_, username_, password_):
 config_path = "./config.json"
 parser = argparse.ArgumentParser(description="南京邮电大学校园网自动登录脚本")
 parser.add_argument("-c", "--config", type=str, help="配置文件路径")
+parser.add_argument("-l", "--level", type=str, help="日志输出等级 debug/info/error")
 args = parser.parse_args()
 if args.config:
     config_path = args.config
 
-print(f"配置文件路径 {config_path}")
+level = logging.DEBUG
+if args.level:
+    if args.level == "debug":
+        level = logging.DEBUG
+    elif args.level == "info":
+        level = logging.INFO
+    elif args.level == "error":
+        level = logging.ERROR
+
+logging.basicConfig(level=level, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+logger.debug(f"配置文件路径 {config_path}")
 
 time_flag = False
 
@@ -74,6 +88,10 @@ elif current_weekday == 6:  # 周日
     if current_time <= end_time:  # 23：29之前
         time_flag = True
 
+weekdays = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+current_weekday_text = weekdays[current_weekday]
+logger.debug(f"当前时间 {current_weekday_text} {current_time}")
+
 with open(config_path, "r", encoding="UTF-8") as config_file:
     config_json = json.load(config_file)
 
@@ -84,7 +102,7 @@ with open(config_path, "r", encoding="UTF-8") as config_file:
     try:
         api = connection.get_api()
     except routeros_api.exceptions.RouterOsApiCommunicationError as e:
-        print("RouterOS的账号或密码错误！", e)
+        logger.error("RouterOS账号或密码错误！", e)
         sys.exit(1)
 
     addresses_list = api.get_resource("/ip/address").get()
@@ -95,12 +113,12 @@ with open(config_path, "r", encoding="UTF-8") as config_file:
             if interface == login["ether"]:
                 # 判断是否在能登录的时间内
                 if login["time_limit"] and not time_flag:
-                    print(f"{interface} 不在允许登录的时间段内")
+                    logger.info(f"{interface} 不在允许登录的时间段内")
                     continue
 
                 # 检查网口网络状态
                 if check_network(login["test_address"]):
-                    print(f"{interface} 网络正常")
+                    logger.info(f"{interface} 网络正常")
                     continue
 
                 # 去除IP后面的掩码部分
@@ -118,10 +136,11 @@ with open(config_path, "r", encoding="UTF-8") as config_file:
                 username = login["username"]
                 password = login["password"]
 
+                logger.debug(f"{interface} 开始登录，账号：{username}, 密码：{password}，运营商：{login['isp']}")
                 flag, content = login_network(ether_ip, isp, username, password)
                 if flag:
-                    print(f"{interface} 成功登录")
+                    logger.info(f"{interface} 成功登录")
                 elif content is not None:
-                    print(f"{interface} 登录失败", content)
+                    logger.error(f"{interface} 登录失败", content)
                 else:
-                    print(f"{interface} 登录失败")
+                    logger.error(f"{interface} 登录失败")
