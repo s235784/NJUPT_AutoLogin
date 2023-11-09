@@ -5,23 +5,24 @@
 
 # 南京邮电大学自动登录脚本
 # 适用于 RouterOS v7.11.2 及以上版本
-# 在 Python 3.8 上通过测试
+# 在 Python 3.8 及以上版本通过测试
 
-import sys
-import ssl
+import argparse
+import contextlib
+import datetime
 import json
 import logging
-import argparse
-import datetime
-import contextlib
-import routeros_api
+import ssl
+import sys
+import urllib.error
 import urllib.request
+import routeros_api.exceptions
 
 
 def check_network(url):
     try:
         with contextlib.closing(urllib.request.urlopen(url, timeout=5)) as response:
-            return response.getcode() <= 300
+            return response.getcode() == 200 or response.getcode() == 204
     except urllib.error.URLError:
         return False
 
@@ -36,14 +37,14 @@ def login_network(ip_, isp_, username_, password_):
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
 
-        with contextlib.closing(urllib.request.urlopen(url, timeout=5)) as response:
+        with contextlib.closing(urllib.request.urlopen(url, context=ssl_context, timeout=5)) as response:
             if response.getcode() == 200:
                 content_ = response.read().decode('utf-8')
                 return "成功" in content_, content_
             else:
                 return False, None
-    except urllib.error.URLError as e:
-        return False, str(e)
+    except urllib.error.URLError as urlError:
+        return False, str(urlError)
 
 
 config_path = "./config.json"
@@ -101,8 +102,9 @@ with open(config_path, "r", encoding="UTF-8") as config_file:
     connection = routeros_api.RouterOsApiPool(os_ip, username=os_username, password=os_password, plaintext_login=True)
     try:
         api = connection.get_api()
-    except routeros_api.exceptions.RouterOsApiCommunicationError as e:
-        logger.error("RouterOS账号或密码错误！", e)
+    except routeros_api.exceptions.RouterOsApiCommunicationError as routerError:
+        logger.error("RouterOS账号或密码错误！")
+        logger.error(routerError)
         sys.exit(1)
 
     addresses_list = api.get_resource("/ip/address").get()
@@ -139,8 +141,8 @@ with open(config_path, "r", encoding="UTF-8") as config_file:
                 logger.debug(f"{interface} 开始登录，账号：{username}, 密码：{password}，运营商：{login['isp']}")
                 flag, content = login_network(ether_ip, isp, username, password)
                 if flag:
-                    logger.info(f"{interface} 成功登录")
+                    logger.info(f"{interface} 登录成功")
                 elif content is not None:
-                    logger.error(f"{interface} 登录失败", content)
+                    logger.error(f"{interface} 登录失败 {content}")
                 else:
                     logger.error(f"{interface} 登录失败")
