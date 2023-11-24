@@ -51,7 +51,7 @@ help() {
 ip() {
   if [ ! "$ip" ]
 	then
-    ip=$(ifconfig "${eth}" | grep inet | awk '{print $2}' | tr -d "addr:")
+    ip=$(ifconfig "${eth}" | grep "inet " | awk '{print $2}' | tr -d "addr:")
     if [ ! "$ip" ]
   	then
   		printf "获取ip地址失败\n"
