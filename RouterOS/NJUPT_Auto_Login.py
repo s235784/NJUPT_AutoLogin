@@ -125,6 +125,8 @@ with open(config_path, "r", encoding="UTF-8") as config_file:
                     continue
 
                 # 检查网口网络状态
+                if "https://" in login["test_address"]:
+                    logger.warning("使用HTTPS站点检测网络状态可能导致结果不准确！")
                 if check_network(login["test_address"]):
                     logger.debug(f"{interface} 网络正常")
                     continue
