@@ -2,6 +2,7 @@
 # @Time    : 2023/11/7
 # @Author  : NuoTian
 # @Version : 1.0.0
+# @Repo    : https://github.com/s235784/NJUPT_AutoLogin
 
 # 南京邮电大学自动登录脚本
 # 适用于 RouterOS v7.11.2 及以上版本
@@ -22,7 +23,8 @@ import routeros_api.exceptions
 def check_network(url):
     try:
         with contextlib.closing(urllib.request.urlopen(url, timeout=5)) as response:
-            return response.getcode() == 200 or response.getcode() == 204
+            responseContent = response.read().decode("utf-8")
+            return "10.10.244.11" not in responseContent
     except urllib.error.URLError:
         return False
 
@@ -104,6 +106,10 @@ with open(config_path, "r", encoding="UTF-8") as config_file:
         api = connection.get_api()
     except routeros_api.exceptions.RouterOsApiCommunicationError as routerError:
         logger.error("RouterOS账号或密码错误！")
+        logger.error(routerError)
+        sys.exit(1)
+    except routeros_api.exceptions.RouterOsApiConnectionError as routerError:
+        logger.error("无法连接到RouterOS，请检查配置文件中的IP地址！")
         logger.error(routerError)
         sys.exit(1)
 
