@@ -99,18 +99,22 @@ turn_on_wifi_and_connect_mac() {
 
 turn_on_wifi_and_connect_linux() {
 	println_info "Trying to trun on Wi-Fi..."
-	if [[ "$operator" == "ctcc" ]]; then
-		println_info "Your operator is China Telecom."
-    nmcli dev wifi connect "NJUPT-CHINANET"
-	elif [[ "$operator" == "cmcc" ]]; then
-		println_info "Your operator is China Mobile."
-		nmcli dev wifi connect "NJUPT-CMCC"
-	elif [[ "$operator" == "njupt" ]]; then
-		println_info "Your operator is NJUPT."
-		nmcli dev wifi connect "NJUPT"
+	if command -v nmcli >/dev/null 2>&1; then
+		if [[ "$operator" == "ctcc" ]]; then
+			println_info "Your operator is China Telecom."
+		nmcli dev wifi connect "NJUPT-CHINANET"
+		elif [[ "$operator" == "cmcc" ]]; then
+			println_info "Your operator is China Mobile."
+			nmcli dev wifi connect "NJUPT-CMCC"
+		elif [[ "$operator" == "njupt" ]]; then
+			println_info "Your operator is NJUPT."
+			nmcli dev wifi connect "NJUPT"
+		else
+			println_error "Invalid operator. Please specify 'ctcc', 'cmcc' or 'njupt'."
+			exit 1
+		fi
 	else
-		println_error "Invalid operator. Please specify 'ctcc', 'cmcc' or 'njupt'."
-		exit 1
+		println_warning "Command \`nmcli\` unavailable. Stopped trying."
 	fi
 }
 
@@ -121,7 +125,11 @@ is_wifi_on() {
   if [[ "$(uname)" == "Darwin" ]]; then
     result=$(networksetup -getairportpower "$interface" | grep "On")
   elif [[ "$(uname)" == "Linux" ]]; then
-    result=$(nmcli radio wifi | grep "enable")
+	if command -v nmcli >/dev/null 2>&1; then
+		result=$(nmcli radio wifi | grep "enable")
+	else
+		println_warning "Command \`nmcli\` unavailable. Stopped trying."
+	fi
   fi
 	if [[ -n $result ]]; then
 		return 0
@@ -134,9 +142,9 @@ is_wifi_on() {
 get_ip_address() {
 	local ip_type="$1"
 	if [ "$ip_type" == "ipv4" ]; then
-		ifconfig "$interface" | grep 'inet ' | awk '{print $2}' | head -n 1
+		ifconfig "$interface" | grep 'inet ' | awk '{print $2}' | head -n 1 | tr -d "addr:"
 	elif [ "$ip_type" == "ipv6" ]; then
-		ifconfig "$interface" | grep 'inet6 ' | grep -v 'fe80::' | awk '{print $2}' | head -n 1
+		ifconfig "$interface" | grep 'inet6 ' | grep -v 'fe80::' | awk '{print $2}' | head -n 1 | tr -d "addr:"
 	else
 		println_error "Invalid IP type. Please specify 'ipv4' or 'ipv6'."
 		return 1
@@ -212,18 +220,23 @@ login_the_wifi() {
 		println_ok "Login successful!"
 	else
 		println_error "Login failed!"
-		println_info "Response: %s\n" "$response"
+		println_info "Response: $response\n"
 	fi
 }
 
 logout_the_wifi() {
+	if [[ -z $ipv4_addr ]]; then
+		generate_ip_addresses
+	else
+		println_info "Using the specified IPv4 address: $ipv4_addr"
+	fi
 	response=$(curl --interface "$interface" -s -k --request GET "https://10.10.244.11:802/eportal/portal/logout?callback=dr1003&login_method=1&wlan_user_ip=$ipv4_addr")
 
 	if [[ "$response" =~ "成功" ]]; then
 		println_ok "Logout successful!"
 	else
 		println_error "Logout failed!"
-		printf "Response: %s\n" "$response"
+		printf "Response: $response\n"
 	fi
 }
 
@@ -311,7 +324,7 @@ main() {
     fi
 		is_wifi_on
 		if [[ $? -eq 1 ]]; then
-			println_error "Failed to turn on Wi-Fi."
+			println_warning "Failed to turn on Wi-Fi automatically."
 		fi
 	fi
 
