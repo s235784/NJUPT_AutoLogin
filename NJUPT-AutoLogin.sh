@@ -142,9 +142,9 @@ is_wifi_on() {
 get_ip_address() {
 	local ip_type="$1"
 	if [ "$ip_type" == "ipv4" ]; then
-		ifconfig "$interface" | grep 'inet ' | awk '{print $2}' | head -n 1 | tr -d "addr:"
+		ifconfig "$interface" | grep 'inet ' | awk '{print $2}' | head -n 1 | sed 's/addr://'
 	elif [ "$ip_type" == "ipv6" ]; then
-		ifconfig "$interface" | grep 'inet6 ' | grep -v 'fe80::' | awk '{print $2}' | head -n 1 | tr -d "addr:"
+		ifconfig "$interface" | grep 'inet6 ' | grep -v 'fe80::' | awk '{print $2}' | head -n 1 | sed 's/addr://'
 	else
 		println_error "Invalid IP type. Please specify 'ipv4' or 'ipv6'."
 		return 1
@@ -236,7 +236,7 @@ logout_the_wifi() {
 		println_ok "Logout successful!"
 	else
 		println_error "Logout failed!"
-		printf "Response: $response\n"
+		println_info "Response: $response\n"
 	fi
 }
 
