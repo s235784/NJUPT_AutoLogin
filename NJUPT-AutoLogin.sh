@@ -102,7 +102,7 @@ turn_on_wifi_and_connect_linux() {
 	if command -v nmcli >/dev/null 2>&1; then
 		if [[ "$operator" == "ctcc" ]]; then
 			println_info "Your operator is China Telecom."
-		nmcli dev wifi connect "NJUPT-CHINANET"
+			nmcli dev wifi connect "NJUPT-CHINANET"
 		elif [[ "$operator" == "cmcc" ]]; then
 			println_info "Your operator is China Mobile."
 			nmcli dev wifi connect "NJUPT-CMCC"
@@ -122,15 +122,15 @@ turn_on_wifi_and_connect_linux() {
 # TODO: to make sure the specific Wi-Fi is connected.
 is_wifi_on() {
 	local result
-  if [[ "$(uname)" == "Darwin" ]]; then
-    result=$(networksetup -getairportpower "$interface" | grep "On")
-  elif [[ "$(uname)" == "Linux" ]]; then
-	if command -v nmcli >/dev/null 2>&1; then
-		result=$(nmcli radio wifi | grep "enable")
-	else
-		println_warning "Command \`nmcli\` unavailable. Stopped trying."
+	if [[ "$(uname)" == "Darwin" ]]; then
+		result=$(networksetup -getairportpower "$interface" | grep "On")
+	elif [[ "$(uname)" == "Linux" ]]; then
+		if command -v nmcli >/dev/null 2>&1; then
+			result=$(nmcli radio wifi | grep "enable")
+		else
+			println_warning "Command \`nmcli\` unavailable. Stopped trying."
+		fi
 	fi
-  fi
 	if [[ -n $result ]]; then
 		return 0
 	else
@@ -277,17 +277,28 @@ is_internet_connectable() {
 	ping -c 1 -W "$timeout" baidu.com &>/dev/null
 }
 
+is_running_on_openwrt() {
+	if [[ -f "/etc/os-release" ]]; then
+		# shellcheck source=/dev/null
+		. /etc/os-release
+		if [[ "$NAME" == "OpenWrt" ]]; then
+			return 0
+		fi
+	fi
+	return 1
+}
+
 main() {
-  if [[ "$(uname)" != "Darwin" ]] && [[ "$(uname)" != "Linux" ]]; then
+	if [[ "$(uname)" != "Darwin" ]] && [[ "$(uname)" != "Linux" ]]; then
 		println_error "This script is not running on macOS or Linux."
 		exit 1
 	fi
 
-  if [[ "$(uname)" == "Darwin" ]] ; then
-    println_ok "This script is running on macOS."
-  elif [[ "$(uname)" == "Linux" ]]; then
-    println_ok "This script is running on Linux."
-  fi
+	if [[ "$(uname)" == "Darwin" ]]; then
+		println_ok "This script is running on macOS."
+	elif [[ "$(uname)" == "Linux" ]]; then
+		println_ok "This script is running on Linux."
+	fi
 
 	if [[ $logout_flag -eq 0 ]]; then
 		logout_the_wifi
@@ -313,18 +324,22 @@ main() {
 		println_info "Logout flag: ${BOLD}OFF${RESET}"
 	fi
 
-	if is_wifi_on; then
-		println_ok "Wi-Fi is on."
+	if is_running_on_openwrt; then
+		println_info "Running on OpenWrt. Skipping Wi-Fi check."
 	else
-		println_info "Trying to turn on Wi-Fi..."
-    if [[ "$(uname)" == "Darwin" ]] ; then
-      turn_on_wifi_and_connect_mac
-    elif [[ "$(uname)" == "Linux" ]]; then
-      turn_on_wifi_and_connect_linux
-    fi
-		is_wifi_on
-		if [[ $? -eq 1 ]]; then
-			println_warning "Failed to turn on Wi-Fi automatically."
+		if is_wifi_on; then
+			println_ok "Wi-Fi is on."
+		else
+			println_info "Trying to turn on Wi-Fi..."
+			if [[ "$(uname)" == "Darwin" ]]; then
+				turn_on_wifi_and_connect_mac
+			elif [[ "$(uname)" == "Linux" ]]; then
+				turn_on_wifi_and_connect_linux
+			fi
+			is_wifi_on
+			if [[ $? -eq 1 ]]; then
+				println_warning "Failed to turn on Wi-Fi automatically."
+			fi
 		fi
 	fi
 
