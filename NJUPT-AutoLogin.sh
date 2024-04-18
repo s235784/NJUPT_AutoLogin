@@ -281,7 +281,7 @@ is_running_on_openwrt() {
 	if [[ -f "/etc/os-release" ]]; then
 		# shellcheck source=/dev/null
 		. /etc/os-release
-		if [[ "$NAME" == "OpenWrt" ]]; then
+		if [[ "$NAME" == "OpenWrt" ]] || [[ "$NAME" == "ImmortalWrt" ]]; then
 			return 0
 		fi
 	fi
