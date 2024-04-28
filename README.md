@@ -1,109 +1,99 @@
 # NJUPT_AutoLogin
-南京邮电大学 自动登录校园网脚本，适合挂在路由器上定时执行
 
-**如果脚本不能正常运行，欢迎提交Issue和PR，一起完善这个脚本**
+南京邮电大学校园网自动登录脚本，支持 macOS 和 Linux（如 OpenWRT）平台。**欢迎提交 Issue 和 PR，一起完善这个脚本。**
 
->  本脚本更详细的教程请移步到[我的博客](https://nuotian.furry.pro/blog/archives/204#header-id-4)中查看
+## 使用方法
+
+1. 下载该脚本（`NJUPT-AutoLogin.sh`）；
+2. 按照下面的选项和参数表构造运行命令。
+   一般格式：`bash NJUPT-AutoLogin.sh [-i interface] [-o operator] [-t timeout] [-p ipv4_addr] [-m] [-n] [-h] login_id login_password`
+   例如：`bash NJUPT-AutoLogin.sh -i en0 -o ctcc -t 2 B21012250 12345678`
+3. 如果是在 OpenWRT 路由器平台上运行，可以参考 [在 OpenWRT 上运行](#在-openwrt-上运行)
+
+选项表：
+
+| 选项 | 名称                   | 默认值       | 备注                                                                       |
+| ---- | ---------------------- | ------------ | -------------------------------------------------------------------------- |
+| `-i` | interface 接口         | `en0`        | 原来的 `-e` 参数                                                           |
+| `-o` | operator 运营商        | `ctcc`       | 原来的 `-i` 参数：取值可能有三种，校园网为 njupt，电信为 ctcc，移动为 cmcc |
+| `-t` | timeout 超时时间       | `2`          | 用于指定检查网络连通性时的超时时间                                         |
+| `-p` | ipv4_addr IPv4 地址    | （自动检测） | 用于手动指定 IPv4 地址，默认情况下会自动检测本机 IP                        |
+| `-m` | logout_mode 登出模式   | -            | 原来的 `-o` 参数：切换到登出模式，脚本运行会登出校园网                     |
+| `-n` | not_limited 无限制账号 | -            | 切换到无时间限制账号，所有时间都会尝试登录                                 |
+| `-h` | 显示帮助菜单           | -            |                                                                            |
+
+参数表：
+
+| 参数             | 名称       |
+| ---------------- | ---------- |
+| `login_id`       | 登录用户名 |
+| `login_password` | 登录密码   |
+
+> [!IMPORTANT]
 >
->  **注意** 脚本会获取系统时间来判断当前是否还没断网，所以系统时间不准可能会导致不能正常触发脚本。建议在配置脚本之前先校准系统时间；且在配置完成之后路由器一直插上电，避免系统时间重置。（应该也花不了很多的电费 手动滑稽）
+> `login_password` 中的特殊字符可能需要转义，如：`+` 可能需要写为 `%2B`，`&` 可能需要写为 `%26`。
+>
+> 这是理论上的，未经过实际的测试。
 
-> **2023年7月更新：目前还不知道三牌楼校区的新接口有什么变化，如果不能正常登录请提交Issue。**
+已弃用选项表：
+
+| 参数 | 名称                     | 默认值 | 备注                                         |
+| ---- | ------------------------ | ------ | -------------------------------------------- |
+| -s   | 标记当前位置为三牌楼校区 | -      | ~~三牌楼校区须加上，仙林校区不用~~（已失效） |
+| -d   | 忽略未插入网线的错误     | -      | ~~配置单线多拨时须加上~~（已失效）           |
+
+> [!TIP]
+> 思路及更详细的教程请移步 [Nuotian 的博客](https://nuotian.furry.pro/blog/archives/204#header-id-4)。
+
+> [!WARNING]
+> 脚本会获取系统时间来判断当前时间是否是可上网时间，进而判断是否要尝试登录，所以错误的系统时间可能导致脚本无法正常运行。建议首先校准系统时间。
+
+> [!CAUTION]
+> **2023 年 7 月更新：目前还不知道三牌楼校区的新接口有什么变化，如果不能正常登录请提交 Issue。**
 
 ## 更新日志
 
-- 2023.7.23 适配23年7月更新的校园网接口
-- 2022.9.2 添加对多网卡设备的支持
-- 2022.8.31 适配三牌楼校区
-- 2022.8.31 添加对不断网账号的支持
+- 2024.04.17 重构；添加对 macOS 的支持
+- 2023.07.23 适配 23 年 7 月更新的校园网接口
+- 2022.09.02 添加对多网卡设备的支持
+- 2022.08.31 适配三牌楼校区
+- 2022.08.31 添加对不断网账号的支持
 
-## 脚本参数
+更多请见 [Releases](https://github.com/s235784/NJUPT_AutoLogin/releases)。
 
-| 参数 | 名称                 | 默认值 | 介绍                                  |
-| ---- | -------------------- | ------ | ------------------------------------- |
-| -e   | eth口                | eth0.1 |                                       |
-| -i   | 运营商               | njupt  | 校园网为njupt，电信为ctcc，移动为cmcc |
-| -l   | 是否有时间限制       |        | 添加参数后会仅在非断网时间内执行      |
-| -s   | 为三牌楼校区         |        | ~~三牌楼校区须加上，仙林校区不用~~（已失效） |
-| -d   | 忽略未插入网线的错误 |        | 配置单线多拨时须加上                  |
-| -h   | 显示帮助菜单         |        |                                       |
-| -o   | 退出校园网           |        |                                       |
+## 在 OpenWRT 上运行
 
-## 用法
+下载 [Releases](https://github.com/s235784/NJUPT_AutoLogin/releases) 中的脚本，上传到路由器中。
 
-### 硬件准备
-
-* 一台刷了第三方固件的路由器（如OpenWRT）
-
-### 配置脚本
-
-首先下载[Release](https://github.com/s235784/NJUPT_AutoLogin/releases)中的脚本，然后上传到路由器中。
-进入路由器后台，记住首页出现的**IPv4 WAN 状态**中的**eth口**，如 我这里是eth0.2。
+进入路由器后台，记住首页出现的 **IPv4 WAN 状态** 中的 **eth0.x**，例如我这里是 `eth0.2`。
 
 ![1](https://raw.githubusercontent.com/s235784/NJUPT_AutoLogin/main/doc/1.png)
 
-然后在路由器的计划任务中添加以下命令，并根据实际情况修改这条命令。
+在路由器的计划任务中添加以下命令，并根据实际情况修改这条命令：
 
+```crontab
+*/5 * * * * bash /path/to/your/NJUPT-AutoLogin.sh [-i interface] [-o operator] [-t timeout] [-p ipv4_addr] [-m] [-n] [-h] login_id login_password
 ```
-*/5 * * * * sh /xxx/NJUPT-AutoLogin.sh -e eth口 -i 运营商 (-l) (-s) 账号 密码
-```
 
-> **注意**
->
-> * **/xxx/NJUPT-AutoLogin.sh** 更换成脚本实际的路径
-> * **eth口** 更换成上一步中相应的值
-> * **账号** 就是校园网登录界面输入的账号
-> * **密码** 建议使用" "将密码括起来，避免出现奇怪的错误，此外"+"和"&"需要转义
-> * **运营商** 请看下表
-> * **-l** 可选参数，如果你的账号晚上会断网就需要加上；反之删去
-> * **-s** 可选参数，如果是三牌楼校区须加上
-
-| 运营商 | 替换成 |
-| ------ | ------ |
-| 校园网 | njupt  |
-| 电信   | ctcc  |
-| 移动   | cmcc  |
-
-密码除了需要用" "括起来之外，对于密码中存在下表的字符的，相应字符需要替换成转义后的字符（未测试）
-
-
-| 密码中的字符 | 转义后的字符 |
-| ------------ | ------------ |
-| +            | %2B          |
-| &            | %26          |
-
-完整的命令如图（复杂的密码请用" "括起来）
+完整的命令如图（复杂的密码请用 `"` 括起来）
 
 ![2](https://raw.githubusercontent.com/s235784/NJUPT_AutoLogin/main/doc/2.png)
 
-确认无误后，保存。之后路由器就会每5分钟确认一次网络状态，如果在没断网的时间内没有登录校园网，路由器就会自动登录了。
+确认无误后保存。之后路由器就会每 5 分钟确认一次网络状态，如果允许登录时间内没有登录校园网，路由器就会自动尝试登录了。
 
 ## 进阶用法
 
-- [南邮校园网单线多拨](https://nuotian.furry.pro/blog/archives/347)
-
-## 接口分析
-
-打开校园网的登录界面，打开浏览器调试，勾选Network选项中的Preserve log，然后正常登录校园网，就能看到在登录时浏览器向10.10.244.11:801发送了POST请求。
-
-![3](https://raw.githubusercontent.com/s235784/NJUPT_AutoLogin/main/doc/3.png)
-
-进一步打开Payload查看POST数据，可以明显看到DDDDD后面的参数就包含了账号，upass就是密码。
-
-![4](https://raw.githubusercontent.com/s235784/NJUPT_AutoLogin/main/doc/4.png)
-
-在进一步的测试中得知，DDDDD的值的格式为 ,0, + 账号 + 运营商标识，其中的运营商标识校园网为空，电信为@njxy，移动为@cmcc。
-然后把得到的api写到Apifox中测试，成功登录。
-
-![5](https://raw.githubusercontent.com/s235784/NJUPT_AutoLogin/main/doc/5.png)
+- ~~[南邮校园网单线多拨](https://nuotian.furry.pro/blog/archives/347)~~（已失效）
 
 ## 参考
 
-* [南京邮电大学_校园网/电信宽带/移动宽带_路由器共享WiFi+自动认证](https://github.com/kaijianyi/NJUPT_NET)
-* [校园网自动登录全平台解决方案](https://zhuanlan.zhihu.com/p/364016452)
+- [南京邮电大学*校园网/电信宽带/移动宽带*路由器共享 WiFi + 自动认证](https://github.com/kaijianyi/NJUPT_NET)
+- [校园网自动登录全平台解决方案](https://zhuanlan.zhihu.com/p/364016452)
 
 ## License
-``` license
- Copyright 2021, NuoTian       
+
+```license
+ Copyright 2021, NuoTian
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
