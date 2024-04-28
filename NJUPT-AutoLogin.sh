@@ -350,15 +350,16 @@ main() {
 			println_info "Time limited account. Checking the time..."
 			if check_time; then
 				println_ok "Time is within the range."
-				login_the_wifi
-				is_internet_connectable
-				if [[ $? -eq 1 ]]; then
-					println_error "Failed to connect to the Internet."
-				fi
 			else
 				println_error "Time is out of range."
 				exit 1
 			fi
+		fi
+		
+		login_the_wifi
+		is_internet_connectable
+		if [[ $? -eq 1 ]]; then
+			println_error "Failed to connect to the Internet."
 		fi
 	fi
 }
