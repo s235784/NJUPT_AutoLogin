@@ -46,15 +46,16 @@ else
 fi
 
 sysenv="$(uname)"
-verbose_mode=1
 login_id=""
 login_pw=""
 isp="ctcc"
 interface="en0"
 timeout=2
-time_limited_account=0
+time_unlimited_account=1
 logout_flag=1
 loginv6=1
+skip_connectivity_test=1
+verbose_mode=1
 
 print_success() {
 	printf "%s%s\t ######  ##     ##  ######   ######  ########  ######   ###### %s%s\n" "$BOLD" "$GREEN" "$RESET"
@@ -99,15 +100,16 @@ help() {
 	printf "Auto login script for NJUPT campus network.\n"
 	printf "Author: NuoTian (https://github.com/s235784)"
 	printf "\n"
-	printf "Usage: %s [-i interface] [-I isp] [-t timeout] [-p ipv4_addr] [-6] [-m] [-n] [-h] [-v] login_id login_password\n" "$0"
+	printf "Usage: %s [-i interface] [-I isp] [-t timeout] [-p ipv4_addr] [-6] [-m] [-n] [-h] [-v] [-c] login_id login_password\n" "$0"
 	printf "Options:\n"
 	printf "\t-i interface\tSpecify the network interface. Default is '%s'.\n" "$interface"
-	printf "\t-I isp\tSpecify ISP. Default is '%s'.\n" "$isp"
-	printf "\t-t timeout\tSpecify the timeout for connectivity tests. Default is %d seconds.\n" "$timeout"
+	printf "\t-I isp\t\tSpecify ISP. Default is '%s'.\n" "$isp"
+	printf "\t-t timeout\tSpecify the timeout for requests. Default is %d seconds.\n" "$timeout"
 	printf "\t-p ipv4_addr\tSpecify the IPv4 address. By default it will be detected automatically.\n"
-	printf "\t-6\t\tattempt to recover IPv6 availability using CERNET IPv6 address. Default is %d (0 for ON, 1 for OFF).\n" "$loginv6"
+	printf "\t-6\t\tAttempt to recover IPv6 availability using CERNET IPv6 address. Default is %d (0 for ON, 1 for OFF).\n" "$loginv6"
 	printf "\t-m\t\tSwitch to logout mode. Default is %d (0 for ON, 1 for OFF).\n" "$logout_flag"
-	printf "\t-n\t\tSwitch to time unlimited account. Default is %d (0 for LIMITED, 1 for NOT).\n" "$time_limited_account"
+	printf "\t-n\t\tSwitch to time unlimited account. Default is %d (0 for UNLIMITED, 1 for LIMITED).\n" "$time_unlimited_account"
+	printf "\t-c\t\tSkip the network connectivity check before logging in. Default is %d (0 for SKIPPING, 1 for NOT).\n" "$skip_connectivity_test"
 	printf "\t-h\t\tShow this help message.\n"
 	printf "\t-v\t\tVerbose mode. Default is %d (0 for ON, 1 for OFF).\n" "$verbose_mode"
 	printf "Arguments:\n"
@@ -281,12 +283,49 @@ network_login() {
 	else
 		println_info "Using the specified IPv4 address: $ipv4_addr"
 	fi
-	response=$(curl --interface "$interface" -s -k --request GET "https://10.10.244.11:802/eportal/portal/login?callback=dr1003&login_method=1&user_account=$user_account&user_password=$user_password&wlan_user_ip=$ipv4_addr")
+	response=$(curl --interface "$interface" -s -k --max-time $timeout --request GET "https://10.10.244.11:802/eportal/portal/login?callback=dr1003&login_method=1&user_account=$user_account&user_password=$user_password&wlan_user_ip=$ipv4_addr")
 	if [[ "$response" =~ "成功" ]]; then
 		println_ok "Login successful!"
+		return 0
 	else
 		println_error "Login failed!"
 		println_info "Response: $response"
+		return 1
+	fi
+}
+
+# Temporary solution to recover IPv6 availability.
+# Using CERNET IPv6 address.
+network_login_ipv6() {
+	ipv6_addr=$(ifconfig "$interface" | grep -Eo '2001:da8.+(/| )' | sed 's/\/.*//g')
+	
+	if [[ -n $ipv6_addr ]]; then
+		println_ok "CERNET IPv6 address '$ipv6_addr' detected."
+
+		login_attempt=$(curl --interface "$interface" -s -k --max-time $timeout -X POST -d "DDDDD=$login_id&upass=$login_pw&0MKKey=%%B5%%C7%%C2%%BC+Sign+in&v6ip=" "192.168.168.168/0.htm" | iconv -f GB18030 -t UTF-8 | grep -o "成功登录")
+		# The first-time network request through IPv6 after logging in is always annoyingly
+		# redirected to http://192.168.168.168/1.htm , presuming the program that initiates
+		# the connection follows redirects. The 'curl -L' used here is to skip this process.
+		curl --interface "$interface" -s -k --max-time $timeout -L -X GET "6.ipw.cn" &>/dev/null 
+		
+
+		if [[ "$login_attempt" == "成功登录" ]]; then
+			println_ok "CERNET IPv6 login success."
+			println_info "Please note that IPv6 connections established in this way ARE CHARGED SEPARATELY."
+			println_info "For account balance information, please check http://192.168.168.168/1.htm ."
+
+			if connectivity_test "v6"; then
+				println_ok "IPv6 connectivity test success."
+			else
+				println_warning "IPv6 connectivity test failed."
+			fi
+			
+		else
+			println_warning "CERNET IPv6 login failed."
+		fi
+
+	else
+		println_error "No CERNET IPv6 address found on $interface."
 	fi
 }
 
@@ -297,8 +336,8 @@ network_logout() {
 		println_info "Using the specified IPv4 address: $ipv4_addr"
 	fi
 	# Line below clears the CERNET IPv6 logged-in status.
-	response6=$(curl --interface "$interface" -k -s -X GET "http://192.168.168.168/F.htm" | iconv -f GB18030 -t UTF-8)
-	response=$(curl --interface "$interface" -k -s --request GET "https://10.10.244.11:802/eportal/portal/logout?callback=dr1003&login_method=1&wlan_user_ip=$ipv4_addr")
+	response6=$(curl --interface "$interface" -k -s --max-time $timeout -X GET "http://192.168.168.168/F.htm" | iconv -f GB18030 -t UTF-8)
+	response=$(curl --interface "$interface" -k -s --max-time $timeout --request GET "https://10.10.244.11:802/eportal/portal/logout?callback=dr1003&login_method=1&wlan_user_ip=$ipv4_addr")
 
 	if [[ "$response" =~ "成功" ]] && [[ -n "$response6" ]]; then
 		println_ok "Logout successful!"
@@ -346,10 +385,16 @@ check_time() {
 connectivity_test() {
 	local test_type="$1"
 	if [[ "$test_type" == "v4" ]]; then
-		if curl --interface "$interface" -k -s --max-time $timeout -X GET "ipinfo.io/ip" | grep "10.10.244.11" &>/dev/null; then
+		local response=$(curl --interface "$interface" -k -s --max-time $timeout -X GET "ipinfo.io/ip")
+		if [ ! $response ]; then
+			println_warning "Failed to check connectivity, no response received. Are you connected to the network?"
 			return 1
 		else
-			return 0
+			if echo "$response" | grep "10.10.244.11" &>/dev/null; then
+				return 1
+			else
+				return 0
+			fi
 		fi
 	elif [[ "$test_type" == "v6" ]]; then
 		if curl --interface "$interface" -6 -k -s --max-time $timeout -X GET "6.ipw.cn" &>/dev/null; then
@@ -370,43 +415,8 @@ check_openwrt() {
 	return 1
 }
 
-# Temporary solution to recover IPv6 availability.
-# Using CERNET IPv6 address.
-ipv6_login() {
-	ipv6_addr=$(ifconfig "$interface" | grep -Eo '2001:da8.+(/| )' | sed 's/\/.*//g')
-	
-	if [[ -n $ipv6_addr ]]; then
-		println_ok "CERNET IPv6 address '$ipv6_addr' detected."
-
-		login_attempt=$(curl --interface "$interface" -s -k -X POST -d "DDDDD=$login_id&upass=$login_pw&0MKKey=%%B5%%C7%%C2%%BC+Sign+in&v6ip=" "192.168.168.168/0.htm" | iconv -f GB18030 -t UTF-8 | grep -o "成功登录")
-		# The first-time network request through IPv6 after logging in is always annoyingly
-		# redirected to http://192.168.168.168/1.htm , presuming the program that initiates
-		# the connection follows redirects. The 'curl -L' used here is to skip this process.
-		curl --interface "$interface" -s -k -L -X GET "6.ipw.cn" &>/dev/null 
-		
-
-		if [[ "$login_attempt" == "成功登录" ]]; then
-			println_ok "CERNET IPv6 login success."
-			println_info "Please note that IPv6 connections established in this way ARE CHARGED SEPARATELY."
-			println_info "For account balance information, please check http://192.168.168.168/1.htm ."
-
-			if connectivity_test "v6"; then
-				println_ok "IPv6 connectivity test success."
-			else
-				println_warning "IPv6 connectivity test failed."
-			fi
-			
-		else
-			println_warning "CERNET IPv6 login failed."
-		fi
-
-	else
-		println_error "No CERNET IPv6 address found on $interface."
-	fi
-}
-
 main() {
-	if [[ "$verbose_mode" == 0 ]]; then
+	if [[ $verbose_mode -eq 0 ]]; then
 		set -x
 	fi
 
@@ -436,7 +446,7 @@ main() {
 	if [[ -n $ipv4_addr ]]; then
 		println_info "IPv4 Address: ${BOLD}$ipv4_addr${RESET}"
 	fi
-	println_info "Account Type: ${BOLD}$( [ $time_limited_account -eq 0 ] && echo 'LIMITED' || echo 'UNLIMITED' )${RESET}"
+	println_info "Account Type: ${BOLD}$( [ $time_unlimited_account -eq 0 ] && echo 'UNLIMITED' || echo 'LIMITED' )${RESET}"
 	println_info "Logout flag: ${BOLD}$( [ $logout_flag -eq 0 ] && echo 'ON' || echo 'OFF' )${RESET}"
 	println_info "CERNET IPv6 login: ${BOLD}$( [ $loginv6 -eq 0 ] && echo 'ON' || echo 'OFF' )${RESET}"
 
@@ -470,15 +480,15 @@ main() {
 		fi
 	fi
 
-	if connectivity_test "v4"; then
+	if [[ $skip_connectivity_test -eq 1 ]] && connectivity_test "v4"; then
 		println_ok "Successfully connected to the Internet."
 		print_success
 		if [[ $loginv6 -eq 0 ]]; then
 			println_info "Recovering IPv6 availability..."
-			ipv6_login
+			network_login_ipv6
 		fi
 	else
-		if [[ $time_limited_account -eq 0 ]]; then
+		if [[ $time_unlimited_account -eq 1 ]]; then
 			println_info "Time limited account. Checking the time..."
 			if check_time; then
 				println_ok "Time is within the range."
@@ -488,17 +498,20 @@ main() {
 				exit 1
 			fi
 		fi
-		network_login
-		
-		if connectivity_test "v4"; then
-			println_ok "Successfully connected to the Internet."
-			print_success
-			if [[ $loginv6 -eq 0 ]]; then
-				println_info "Recovering IPv6 availability..."
-				ipv6_login
+
+		if network_login; then
+			if connectivity_test "v4"; then
+				println_ok "Successfully connected to the Internet."
+				print_success
+				if [[ $loginv6 -eq 0 ]]; then
+					println_info "Recovering IPv6 availability..."
+					network_login_ipv6
+				fi
+			else
+				println_error "Failed to connect to the Internet."
+				print_fail
 			fi
 		else
-			println_error "Failed to connect to the Internet."
 			print_fail
 		fi
 	fi
@@ -509,15 +522,16 @@ main() {
 
 # init options
 # must be done before calling main
-while getopts ':i:I:t:p:6mnhv' OPT; do
+while getopts ':i:I:t:p:6mnchv' OPT; do
 	case $OPT in
 	i) interface="$OPTARG" ;;
 	I) isp="$OPTARG" ;;
 	t) timeout="$OPTARG" ;;
 	p) ipv4_addr="$OPTARG" ;;
 	6) loginv6=0 ;;
-	m) logout_flag=0 ;;          # mode
-	n) time_limited_account=1 ;; # not time limited
+	m) logout_flag=0 ;;
+	n) time_unlimited_account=0 ;;
+	c) skip_connectivity_test=0 ;;
 	h) help ;;
 	v) verbose_mode=0 ;;
 	:)
