@@ -353,17 +353,18 @@ check_time() {
 
 	local time
 	time=$(date +%H%M)
+	time=${time##0}
 
 	# Monday to Thursday
 	if [[ "$week" -ge 1 ]] && [[ "$week" -le 4 ]]; then
 		# 7:01 to 23：29
-		if [[ "$((10#$time))" -ge 701 ]] && [[ "$((10#$time))" -le 2329 ]]; then
+		if [[ "$time" -ge 701 ]] && [[ "$time" -le 2329 ]]; then
 			return 0
 		fi
 		# Friday
 	elif [[ "$week" -eq 5 ]]; then
 		# After 7:01
-		if [[ "$((10#$time))" -ge 701 ]]; then
+		if [[ "$time" -ge 701 ]]; then
 			return 0
 		fi
 		# Saturday
@@ -372,7 +373,7 @@ check_time() {
 		# Sunday
 	elif [[ "$week" -eq 0 ]]; then
 		# Before 23:29
-		if [[ "$((10#$time))" -le 2329 ]]; then
+		if [[ "$time" -le 2329 ]]; then
 			return 0
 		fi
 	fi
