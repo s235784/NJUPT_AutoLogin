@@ -1,6 +1,8 @@
 # NJUPT_AutoLogin
 
-南京邮电大学校园网自动登录脚本，支持 macOS 和 Linux（如 OpenWRT）平台。**欢迎提交 Issue 和 PR，一起完善这个脚本。**
+南京邮电大学校园网自动登录脚本，支持 macOS 、 Linux（如 OpenWRT）和 MikroTik RouterOS 平台。**欢迎提交 Issue 和 PR，一起完善这个脚本。**
+
+适用于 MikroTik RouterOS 平台的使用教程请 [移步这里](./README_RouterOS.md)
 
 ## 使用方法
 
@@ -67,7 +69,7 @@
 
 进入路由器后台，记住首页出现的 **IPv4 WAN 状态** 中的 **eth0.x**，例如我这里是 `eth0.2`。
 
-![1](https://raw.githubusercontent.com/s235784/NJUPT_AutoLogin/main/doc/1.png)
+![readme_openwrt_eth](doc/readme_openwrt_eth.png)
 
 在路由器的计划任务中添加以下命令，并根据实际情况修改这条命令：
 
@@ -77,13 +79,13 @@
 
 完整的命令如图（复杂的密码请用 `"` 括起来）
 
-![2](https://raw.githubusercontent.com/s235784/NJUPT_AutoLogin/main/doc/2.png)
+![readme_openwrt_crontab](doc/readme_openwrt_crontab.png)
 
 确认无误后保存。之后路由器就会每 5 分钟确认一次网络状态，如果允许登录时间内没有登录校园网，路由器就会自动尝试登录了。
 
 ## 进阶用法
 
-- ~~[南邮校园网单线多拨](https://nuotian.furry.pro/blog/archives/347)~~（已失效）
+- [南邮校园网单线多拨](https://nuotian.furry.pro/blog/archives/347)（部分寝室有效，需要更多反馈 [#11](https://github.com/s235784/NJUPT_AutoLogin/issues/11)）
 
 ## 参考
 
