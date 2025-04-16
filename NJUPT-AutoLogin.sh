@@ -386,19 +386,22 @@ check_time() {
 connectivity_test() {
 	local test_type="$1"
 	if [[ "$test_type" == "v4" ]]; then
-		local response=$(curl --interface "$interface" -k -s --max-time $timeout -X GET "ipinfo.io/ip")
-		if [ ! $response ]; then
-			println_warning "Failed to check connectivity, no response received. Are you connected to the network?"
-			return 1
-		else
-			if echo "$response" | grep "10.10.244.11" &>/dev/null; then
-				return 1
-			else
+		case $(curl --interface "$interface" -4 -k -s --max-time "$timeout" -X GET -w "%{http_code}" "http://connect.rom.miui.com/generate_204") in
+			204)
+				println_ok "Successfully connected to the Internet."
 				return 0
-			fi
-		fi
+				;;
+			301|302)
+				println_warning "Not logged in."
+			return 1
+				;;
+			*)
+				println_warning "Failed to check connectivity, no valid response received. Are you connected to the network?"
+				return 1
+				;;
+		esac
 	elif [[ "$test_type" == "v6" ]]; then
-		if curl --interface "$interface" -6 -k -s --max-time $timeout -X GET "6.ipw.cn" &>/dev/null; then
+		if [[ $(curl --interface "$interface" -6 -k -s --max-time "$timeout" -X GET -w "%{http_code}" "http://connect.rom.miui.com/generate_204") -eq 204 ]]; then
 			return 0
 		fi
 	fi
