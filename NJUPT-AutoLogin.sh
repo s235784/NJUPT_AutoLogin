@@ -23,7 +23,7 @@
 #
 #    Author: NuoTian (https://github.com/s235784)
 #    Repository: https://github.com/s235784/NJUPT_AutoLogin
-#    Version: 1.2.0
+#    Version: 1.2.1
 #    Refactorized and added macOS support by BlockLune
 #    Experimental SSID recognition and IPv6 support added by SteveXu9102
 
