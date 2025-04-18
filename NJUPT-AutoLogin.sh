@@ -58,23 +58,23 @@ skip_connectivity_test=1
 verbose_mode=1
 
 print_success() {
-	printf "%s%s\t ######  ##     ##  ######   ######  ########  ######   ###### %s%s\n" "$BOLD" "$GREEN" "$RESET"
-	printf "%s%s\t##    ## ##     ## ##    ## ##    ## ##       ##    ## ##    ##%s%s\n" "$BOLD" "$GREEN" "$RESET"
-	printf "%s%s\t##       ##     ## ##       ##       ##       ##       ##      %s%s\n" "$BOLD" "$GREEN" "$RESET"
-	printf "%s%s\t ######  ##     ## ##       ##       ######    ######   ###### %s%s\n" "$BOLD" "$GREEN" "$RESET"
-	printf "%s%s\t      ## ##     ## ##       ##       ##             ##       ##%s%s\n" "$BOLD" "$GREEN" "$RESET"
-	printf "%s%s\t##    ## ##     ## ##    ## ##    ## ##       ##    ## ##    ##%s%s\n" "$BOLD" "$GREEN" "$RESET"
-	printf "%s%s\t ######   #######   ######   ######  ########  ######   ###### %s%s\n" "$BOLD" "$GREEN" "$RESET"
+	printf "%s%s\t ######  ##     ##  ######   ######  ########  ######   ###### %s\n" "$BOLD" "$GREEN" "$RESET"
+	printf "%s%s\t##    ## ##     ## ##    ## ##    ## ##       ##    ## ##    ##%s\n" "$BOLD" "$GREEN" "$RESET"
+	printf "%s%s\t##       ##     ## ##       ##       ##       ##       ##      %s\n" "$BOLD" "$GREEN" "$RESET"
+	printf "%s%s\t ######  ##     ## ##       ##       ######    ######   ###### %s\n" "$BOLD" "$GREEN" "$RESET"
+	printf "%s%s\t      ## ##     ## ##       ##       ##             ##       ##%s\n" "$BOLD" "$GREEN" "$RESET"
+	printf "%s%s\t##    ## ##     ## ##    ## ##    ## ##       ##    ## ##    ##%s\n" "$BOLD" "$GREEN" "$RESET"
+	printf "%s%s\t ######   #######   ######   ######  ########  ######   ###### %s\n" "$BOLD" "$GREEN" "$RESET"
 }
 
 print_fail() {
-	printf "%s%s\t########    ###    #### ##       ######## ######## %s%s\n" "$BOLD" "$RED" "$RESET"
-	printf "%s%s\t##         ## ##    ##  ##       ##       ##     ##%s%s\n" "$BOLD" "$RED" "$RESET"
-	printf "%s%s\t##        ##   ##   ##  ##       ##       ##     ##%s%s\n" "$BOLD" "$RED" "$RESET"
-	printf "%s%s\t######   ##     ##  ##  ##       ######   ##     ##%s%s\n" "$BOLD" "$RED" "$RESET"
-	printf "%s%s\t##       #########  ##  ##       ##       ##     ##%s%s\n" "$BOLD" "$RED" "$RESET"
-	printf "%s%s\t##       ##     ##  ##  ##       ##       ##     ##%s%s\n" "$BOLD" "$RED" "$RESET"
-	printf "%s%s\t##       ##     ## #### ######## ######## ######## %s%s\n" "$BOLD" "$RED" "$RESET"
+	printf "%s%s\t########    ###    #### ##       ######## ######## %s\n" "$BOLD" "$RED" "$RESET"
+	printf "%s%s\t##         ## ##    ##  ##       ##       ##     ##%s\n" "$BOLD" "$RED" "$RESET"
+	printf "%s%s\t##        ##   ##   ##  ##       ##       ##     ##%s\n" "$BOLD" "$RED" "$RESET"
+	printf "%s%s\t######   ##     ##  ##  ##       ######   ##     ##%s\n" "$BOLD" "$RED" "$RESET"
+	printf "%s%s\t##       #########  ##  ##       ##       ##     ##%s\n" "$BOLD" "$RED" "$RESET"
+	printf "%s%s\t##       ##     ##  ##  ##       ##       ##     ##%s\n" "$BOLD" "$RED" "$RESET"
+	printf "%s%s\t##       ##     ## #### ######## ######## ######## %s\n" "$BOLD" "$RED" "$RESET"
 }
 
 println_error() {
@@ -164,13 +164,13 @@ wlan_status() {
 	if [[ "$sysenv" == "Darwin" ]]; then
 		result=$(networksetup -getairportpower "$interface" | grep "On")
 	elif [[ "$sysenv" == "Linux" ]]; then
-		if command -v nmcli >/dev/null 2>&1; then
+		if command -v nmcli > /dev/null 2>&1; then
 			result=$(nmcli radio wifi | grep "enable")
 			if [[ $? -eq 0 ]]; then
-        		println_ok "Wi-Fi is enabled."
-    		else
-        		println_error "Failed to enable Wi-Fi."
-    		fi
+				println_ok "Wi-Fi is enabled."
+			else
+				println_error "Failed to enable Wi-Fi."
+			fi
 		else
 			println_warning "Command \`nmcli\` unavailable. Stopped trying."
 		fi
@@ -283,7 +283,7 @@ network_login() {
 	else
 		println_info "Using the specified IPv4 address: $ipv4_addr"
 	fi
-	response=$(curl --interface "$interface" -s -k --max-time $timeout --request GET "https://10.10.244.11:802/eportal/portal/login?callback=dr1003&login_method=1&user_account=$user_account&user_password=$user_password&wlan_user_ip=$ipv4_addr")
+	response=$(curl --interface "$interface" -s -k --max-time "$timeout" --request GET "https://10.10.244.11:802/eportal/portal/login?callback=dr1003&login_method=1&user_account=$user_account&user_password=$user_password&wlan_user_ip=$ipv4_addr")
 	if [[ "$response" =~ "成功" ]]; then
 		println_ok "Login successful!"
 		return 0
@@ -302,11 +302,11 @@ network_login_ipv6() {
 	if [[ -n $ipv6_addr ]]; then
 		println_ok "CERNET IPv6 address '$ipv6_addr' detected."
 
-		login_attempt=$(curl --interface "$interface" -s -k --max-time $timeout -X POST -d "DDDDD=$login_id&upass=$login_pw&0MKKey=%%B5%%C7%%C2%%BC+Sign+in&v6ip=" "192.168.168.168/0.htm" | iconv -f GB18030 -t UTF-8 | grep -o "成功登录")
+		login_attempt=$(curl --interface "$interface" -s -k --max-time "$timeout" -X POST -d "DDDDD=$login_id&upass=$login_pw&0MKKey=%%B5%%C7%%C2%%BC+Sign+in&v6ip=" "192.168.168.168/0.htm" | iconv -f GB18030 -t UTF-8 | grep -o "成功登录")
 		# The first-time network request through IPv6 after logging in is always annoyingly
 		# redirected to http://192.168.168.168/1.htm , presuming the program that initiates
 		# the connection follows redirects. The 'curl -L' used here is to skip this process.
-		curl --interface "$interface" -s -k --max-time $timeout -L -X GET "6.ipw.cn" &>/dev/null 
+		curl --interface "$interface" -s -k --max-time "$timeout" -L -X GET "6.ipw.cn" &> /dev/null
 		
 
 		if [[ "$login_attempt" == "成功登录" ]]; then
@@ -336,8 +336,8 @@ network_logout() {
 		println_info "Using the specified IPv4 address: $ipv4_addr"
 	fi
 	# Line below clears the CERNET IPv6 logged-in status.
-	response6=$(curl --interface "$interface" -k -s --max-time $timeout -X GET "http://192.168.168.168/F.htm" | iconv -f GB18030 -t UTF-8)
-	response=$(curl --interface "$interface" -k -s --max-time $timeout --request GET "https://10.10.244.11:802/eportal/portal/logout?callback=dr1003&login_method=1&wlan_user_ip=$ipv4_addr")
+	response6=$(curl --interface "$interface" -k -s --max-time "$timeout" -X GET "http://192.168.168.168/F.htm" | iconv -f GB18030 -t UTF-8)
+	response=$(curl --interface "$interface" -k -s --max-time "$timeout" --request GET "https://10.10.244.11:802/eportal/portal/logout?callback=dr1003&login_method=1&wlan_user_ip=$ipv4_addr")
 
 	if [[ "$response" =~ "成功" ]] && [[ -n "$response6" ]]; then
 		println_ok "Logout successful!"
@@ -386,19 +386,22 @@ check_time() {
 connectivity_test() {
 	local test_type="$1"
 	if [[ "$test_type" == "v4" ]]; then
-		local response=$(curl --interface "$interface" -k -s --max-time $timeout -X GET "ipinfo.io/ip")
-		if [ ! $response ]; then
-			println_warning "Failed to check connectivity, no response received. Are you connected to the network?"
-			return 1
-		else
-			if echo "$response" | grep "10.10.244.11" &>/dev/null; then
-				return 1
-			else
+		case $(curl --interface "$interface" -4 -k -s --max-time "$timeout" -X GET -w "%{http_code}" "http://connect.rom.miui.com/generate_204") in
+			204)
+				println_ok "Successfully connected to the Internet."
 				return 0
-			fi
-		fi
+				;;
+			301|302)
+				println_warning "Not logged in."
+				return 1
+				;;
+			*)
+				println_warning "Failed to check connectivity, no valid response received. Are you connected to the network?"
+				return 1
+				;;
+		esac
 	elif [[ "$test_type" == "v6" ]]; then
-		if curl --interface "$interface" -6 -k -s --max-time $timeout -X GET "6.ipw.cn" &>/dev/null; then
+		if [[ $(curl --interface "$interface" -6 -k -s --max-time "$timeout" -X GET -w "%{http_code}" "http://connect.rom.miui.com/generate_204") -eq 204 ]]; then
 			return 0
 		fi
 	fi

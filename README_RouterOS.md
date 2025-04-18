@@ -29,8 +29,8 @@ source ./venv/bin/activate
 ```Shell
 pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple routeros_api
 ```
-5. 把 NJUPT_Auto_Login.py 和 config.json 上传到NJUPT-AutoLogin目录下
-6. 修改 config.json 内的配置信息，各参数参考下方说明
+5. 把 `NJUPT_Auto_Login.py` 和 `config.json` 上传到 `NJUPT-AutoLogin` 目录下
+6. 修改 `config.json` 内的配置信息，各参数参考下方说明
 7. 退出虚拟环境，并检查脚本是否能正常运行（使用绝对路径避免上下文问题）
 ```Shell
 deactivate
@@ -47,20 +47,20 @@ crontab -e
 
 选项表：
 
-| 选项             | 名称       | 默认值          | 备注                           |
-| --------------- | ---------- | -------------- | ----------------------------- |
-| `-c` `--config` | 配置文件目录 | `./config.json`|                               |
-| `-l` `--level`  | 输出日志等级 | `debug`        | 可用取值`debug` `info` `error` |
+| 选项            | 名称         | 默认值          | 备注                            |
+| --------------- | ------------ | --------------- | ------------------------------- |
+| `-c` `--config` | 配置文件目录 | `./config.json` |                                 |
+| `-l` `--level`  | 输出日志等级 | `debug`         | 可用取值 `debug` `info` `error` |
 
 配置文件：
 
-```JSON
+```JSONC
 {
   "login": [
     {
-      "test_address": "http://connect.rom.miui.com/generate_204",  // 用于检测连通性的地址，建议使用HTTP
+      "test_address": "http://connect.rom.miui.com/generate_204",  // 用于检测连通性的地址，建议使用 HTTP
       "ether": "eth0",  // 对应 RouterOS 的 interface 名称
-      "isp": "njupt",  // 登录的运营商，可选 校园网"njupt" 电信"cmcc" 移动"ctcc"
+      "isp": "njupt",  // 登录的运营商，可选 校园网 "njupt" 电信 "cmcc" 移动 "ctcc"
       "username": "B01010101",  // 校园网账号
       "password": "123456789",  // 校园网密码
       "time_limit": true  // 账号是否晚上会断网
