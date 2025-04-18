@@ -1,6 +1,6 @@
 # NJUPT_AutoLogin
 
-南京邮电大学校园网自动登录脚本，支持 macOS、Linux（如 OpenWRT）和 MikroTik RouterOS 平台。** 欢迎提交 Issue 和 PR，一起完善这个脚本。**
+南京邮电大学校园网自动登录脚本，支持 macOS、Linux（如 OpenWRT）和 MikroTik RouterOS 平台。**欢迎提交 Issue 和 PR，一起完善这个脚本。**
 
 适用于 MikroTik RouterOS 平台的使用教程请 [移步这里](./README_RouterOS.md)
 
@@ -58,8 +58,8 @@ Linux 使用此脚本前需要检查以下依赖是否安装：
 已弃用选项表：
 
 | 参数 | 名称                     | 默认值 | 备注                                         |
-| ---- | ------------------------ | ------ | -------------------------------------------- |
-| -s   | 标记当前位置为三牌楼校区 | -      | ~~三牌楼校区须加上，仙林校区不用~~（已失效） |
+| ---- | ------------------------ | ------ | ----------------------------------------- |
+| -s   | 标记当前位置为三牌楼校区 | -      | ~~三牌楼校区须加上，仙林校区不用~~ |
 
 > [!TIP]
 > 思路及更详细的教程请移步 [Nuotian 的博客](https://nuotian.furry.pro/blog/archives/204#header-id-4)。
@@ -89,21 +89,17 @@ Linux 使用此脚本前需要检查以下依赖是否安装：
 
 ![readme_openwrt_eth](doc/readme_openwrt_eth.png)
 
-在路由器的计划任务中添加以下命令，并根据实际情况修改这条命令：
+在路由器的计划任务中添加以下命令，并根据实际情况修改这条命令（复杂的密码请用 `"` 括起来）：
 
 ```crontab
-*/5 * * * * bash /path/to/your/NJUPT-AutoLogin.sh [-i interface] [-I isp] [-t timeout] [-p ipv4_addr] [-m] [-n] [-h] login_id login_password
+*/5 * * * * bash /path/to/your/NJUPT-AutoLogin.sh [-i interface] [-I isp] [-t timeout] [-p ipv4_addr] [-6][-n] [-c] [-v] login_id login_password
 ```
-
-完整的命令如图（复杂的密码请用 `"` 括起来）
-
-![readme_openwrt_crontab](doc/readme_openwrt_crontab.png)
 
 确认无误后保存。之后路由器就会每 5 分钟确认一次网络状态，如果允许登录时间内没有登录校园网，路由器就会自动尝试登录了。
 
 ## 进阶用法
 
-- [南邮校园网单线多拨](https://nuotian.furry.pro/blog/archives/347)（部分宿舍有效，需要更多反馈 [#11](https://github.com/s235784/NJUPT_AutoLogin/issues/11)）
+- [南邮校园网单线多拨](https://nuotian.furry.pro/archives/347)（部分宿舍有效，需要更多反馈 [#11](https://github.com/s235784/NJUPT_AutoLogin/issues/11)）
 
 ## IPv6 支持（实验性）
 
