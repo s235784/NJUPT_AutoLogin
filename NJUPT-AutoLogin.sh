@@ -56,6 +56,8 @@ logout_flag=1
 loginv6=1
 skip_connectivity_test=1
 verbose_mode=1
+unset restart_device
+sleep_time=1
 
 print_success() {
 	printf "%s%s\t ######  ##     ##  ######   ######  ########  ######   ###### %s\n" "$BOLD" "$GREEN" "$RESET"
@@ -100,12 +102,14 @@ help() {
 	printf "Auto login script for NJUPT campus network.\n"
 	printf "Author: NuoTian (https://github.com/s235784)"
 	printf "\n"
-	printf "Usage: %s [-i interface] [-I isp] [-t timeout] [-p ipv4_addr] [-6] [-m] [-n] [-h] [-v] [-c] login_id login_password\n" "$0"
+	printf "Usage: %s [-i interface] [-I isp] [-t timeout] [-p ipv4_addr] [-r restart_device] [-T sleep_time] [-6] [-m] [-n] [-h] [-v] [-c] login_id login_password\n" "$0"
 	printf "Options:\n"
 	printf "\t-i interface\tSpecify the network interface. Default is '%s'.\n" "$interface"
 	printf "\t-I isp\t\tSpecify ISP. Default is '%s'.\n" "$isp"
 	printf "\t-t timeout\tSpecify the timeout for requests. Default is %d seconds.\n" "$timeout"
 	printf "\t-p ipv4_addr\tSpecify the IPv4 address. By default it will be detected automatically.\n"
+	printf "\t-r restart_device\trestart the specify device before login(Only on Wrt). Default is empty.\n"
+	printf "\t-r sleep_time\tstart login after restarting the device. Default is 1s.\n"
 	printf "\t-6\t\tAttempt to recover IPv6 availability using CERNET IPv6 address. Default is %d (0 for ON, 1 for OFF).\n" "$loginv6"
 	printf "\t-m\t\tSwitch to logout mode. Default is %d (0 for ON, 1 for OFF).\n" "$logout_flag"
 	printf "\t-n\t\tSwitch to time unlimited account. Default is %d (0 for UNLIMITED, 1 for LIMITED).\n" "$time_unlimited_account"
@@ -116,6 +120,14 @@ help() {
 	printf "\tlogin_id\tThe user ID.\n"
 	printf "\tlogin_password\tThe user password.\n"
 	exit 0
+}
+
+try_restart_device(){
+	if [[ -n $restart_device ]]; then
+		println_info "Restart the $restart_device"
+		ifdown $restart_device && sleep 1 && ifup $restart_device
+		sleep $sleep_time
+	fi
 }
 
 enable_wlan_and_connect_mac() {
@@ -483,7 +495,9 @@ main() {
 			fi
 		fi
 	fi
-
+	if [[ "$restart_device" != "" ]]; then
+    	try_restart_device
+	fi
 	if [[ $skip_connectivity_test -eq 1 ]] && connectivity_test "v4"; then
 		println_ok "Successfully connected to the Internet."
 		print_success
@@ -526,12 +540,14 @@ main() {
 
 # init options
 # must be done before calling main
-while getopts ':i:I:t:p:6mnchv' OPT; do
+while getopts ':i:I:t:p:r:T:6mnchvr' OPT; do
 	case $OPT in
 	i) interface="$OPTARG" ;;
 	I) isp="$OPTARG" ;;
 	t) timeout="$OPTARG" ;;
 	p) ipv4_addr="$OPTARG" ;;
+	r) restart_device="$OPTARG";;
+	T) sleep_time="$OPTARG";;
 	6) loginv6=0 ;;
 	m) logout_flag=0 ;;
 	n) time_unlimited_account=0 ;;
