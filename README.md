@@ -62,7 +62,7 @@ Linux 使用此脚本前需要检查以下依赖是否安装：
 | -s   | 标记当前位置为三牌楼校区 | -      | ~~三牌楼校区须加上，仙林校区不用~~ |
 
 > [!TIP]
-> 思路及更详细的教程请移步 [Nuotian 的博客](https://nuotian.furry.pro/blog/archives/204#header-id-4)。
+> 思路及更详细的教程请移步 [Nosora 的博客](https://nosora.dev/archives/204#header-id-4)。
 
 > [!CAUTION]
 > **2025 年 4 月更新：对已登录的账号发送登录请求会导致账号下线，请不要在非多播场景下添加 `-c` 参数。**  
@@ -99,7 +99,7 @@ Linux 使用此脚本前需要检查以下依赖是否安装：
 
 ## 进阶用法
 
-- [南邮校园网单线多拨](https://nuotian.furry.pro/archives/347)（部分宿舍有效，需要更多反馈 [#11](https://github.com/s235784/NJUPT_AutoLogin/issues/11)）
+- [南邮校园网单线多拨](https://nosora.dev/archives/347)（部分宿舍有效，需要更多反馈 [#11](https://github.com/s235784/NJUPT_AutoLogin/issues/11)）
 
 ## IPv6 支持（实验性）
 
@@ -127,21 +127,3 @@ Linux 使用此脚本前需要检查以下依赖是否安装：
 - [南京邮电大学*校园网/电信宽带/移动宽带*路由器共享 WiFi + 自动认证](https://github.com/kaijianyi/NJUPT_NET)
 - [校园网自动登录全平台解决方案](https://zhuanlan.zhihu.com/p/364016452)
 - [你邮专的ipv6真的是用不了一点【南京邮电大学吧】_百度贴吧](https://tieba.baidu.com/p/8707266189?pid=150503656049&cid=150604976178#150604976178)
-
-## License
-
-```license
- Copyright 2021, NuoTian
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-```
