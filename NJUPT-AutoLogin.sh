@@ -13,19 +13,11 @@
 #    /_/   \_\__,_|\__\___/|_____\___/ \__, |_|_| |_|
 #                                      |___/
 #
-#    Example of usage:
-#    bash NJUPT-AutoLogin.sh -i en0 -I ctcc -t 2 B21012250 12345678
-#
-#     _   _             _______  _
-#    |  \| | _   _   ___  | |    _   __ _  _ __
-#    | . ` || | | | / _ \ | |   | | / _` || '_ \
-#    |_| \_| \__,_| \___/ |_|   |_| \__,_||_| |_|
-#
-#    Author: NuoTian (https://github.com/s235784)
 #    Repository: https://github.com/s235784/NJUPT_AutoLogin
-#    Version: 1.2.1
-#    Refactorized and added macOS support by BlockLune
-#    Experimental SSID recognition and IPv6 support added by SteveXu9102
+#    Version: 1.2.2
+#
+#    Example of usage:
+#    bash NJUPT-AutoLogin.sh -i en0 -I ctcc -t 2 B21010101 12345678
 
 # Terminal check for colored output
 if [[ -t 1 ]]; then
