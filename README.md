@@ -12,7 +12,7 @@
 1. 下载该脚本 `NJUPT-AutoLogin.sh`。
 2. 按照下面的选项和参数表构造运行命令。
 
-    一般格式：`bash NJUPT-AutoLogin.sh [-i interface] [-I isp] [-t timeout] [-p ipv4_addr] [-6] [-m] [-n] [-c] [-h] [-v] login_id login_password`
+    一般格式：`bash NJUPT-AutoLogin.sh [-i interface] [-I isp] [-t timeout] [-p ipv4_addr] [-6] [-m] [-n] [-c] [-l] [-h] [-v] login_id login_password`
 
 3. 在终端内运行命令。
 
@@ -43,9 +43,10 @@ Linux 使用此脚本前需要检查以下依赖是否安装：
 | `-t` | timeout 超时时间         | `2`          | 指定检查网络连通性和发送请求时的超时时间                                                    |
 | `-p` | ipv4_addr IPv4 地址      | （自动检测） | 手动指定 IPv4 地址，默认情况下会自动检测本机 IP                                             |
 | `-6` | loginv6 教育网 IPv6 登录 | -            | 用于通过教育网 IPv6 地址恢复公网 IPv6 访问权限（[实验性功能](#ipv6-支持实验性)， 默认关闭） |
-| `-m` | logout_mode 登出模式     | -            | 切换到登出模式，脚本运行会登出校园网                                                        |
+| `-m` | mac_detection mac 检测   | -            | 开启 mac 检测策略：仅当本机 mac 地址发生变化且网络不通时才尝试登录（默认关闭）              |
 | `-n` | not_limited 无限制账号   | -            | 切换到无时间限制账号，所有时间都会尝试登录                                                  |
 | `-c` | conn_skip 跳过连通性检测 | -            | 在执行登录请求前不检查当前网络状态（非多播场景下不要添加该选项）                            |
+| `-l` | logout_mode 登出模式     | -            | 切换到登出模式，脚本运行会登出校园网                                                        |
 | `-h` | 显示帮助菜单             | -            |                                                                                             |
 | `-v` | 调试输出模式             | -            | 逐条输出脚本代码执行情况                                                                    |
 
@@ -66,7 +67,7 @@ Linux 使用此脚本前需要检查以下依赖是否安装：
 > 思路及更详细的教程请移步 [Nosora 的博客](https://nosora.dev/archives/204#header-id-4)。
 
 > [!CAUTION]
-> **2025 年 9 月更新：仙林校区网络升级后使用 mac 检测，mac 地址不变只要登陆过就不用重复登陆**  
+> **2025 年 9 月更新：仙林校区网络升级后使用 mac 检测，mac 地址不变只要登陆过就不用重复登陆；脚本可用 `-m` 开启 mac 检测策略**  
 > **2025 年 4 月更新：对已登录的账号发送登录请求会导致账号下线，请不要在非多播场景下添加 `-c` 参数。**  
 > **2024 年 9 月更新：目前无法确定校园网 IPv6 的登录接口在不同网络环境下是否通用（在获取到 `2001:da8` 段地址的情况下）。若不能正常使用请提交 Issue。**  
 > **2023 年 7 月更新：目前还不知道三牌楼校区的新接口有什么变化，如果不能正常登录请提交 Issue。**
@@ -95,7 +96,7 @@ Linux 使用此脚本前需要检查以下依赖是否安装：
 在路由器的计划任务中添加以下命令，并根据实际情况修改这条命令（复杂的密码请用 `"` 括起来）：
 
 ```crontab
-*/5 * * * * bash /path/to/your/NJUPT-AutoLogin.sh [-i interface] [-I isp] [-t timeout] [-p ipv4_addr] [-6][-n] [-c] [-v] login_id login_password
+*/5 * * * * bash /path/to/your/NJUPT-AutoLogin.sh [-i interface] [-I isp] [-t timeout] [-p ipv4_addr] [-6] [-m] [-n] [-c] [-l] [-v] login_id login_password
 ```
 
 确认无误后保存。之后路由器就会每 5 分钟确认一次网络状态，如果允许登录时间内没有登录校园网，路由器就会自动尝试登录了。
