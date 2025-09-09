@@ -59,6 +59,13 @@ verbose_mode=1
 unset restart_device
 sleep_time=1
 
+mac_detection=1
+state_dir=""
+mac_state_file=""
+current_mac=""
+last_mac=""
+mac_changed_flag=0
+
 print_success() {
 	printf "%s%s\t ######  ##     ##  ######   ######  ########  ######   ###### %s\n" "$BOLD" "$GREEN" "$RESET"
 	printf "%s%s\t##    ## ##     ## ##    ## ##    ## ##       ##    ## ##    ##%s\n" "$BOLD" "$GREEN" "$RESET"
@@ -102,18 +109,19 @@ help() {
 	printf "Auto login script for NJUPT campus network.\n"
 	printf "Author: NuoTian (https://github.com/s235784)"
 	printf "\n"
-	printf "Usage: %s [-i interface] [-I isp] [-t timeout] [-p ipv4_addr] [-r restart_device] [-T sleep_time] [-6] [-m] [-n] [-h] [-v] [-c] login_id login_password\n" "$0"
+	printf "Usage: %s [-i interface] [-I isp] [-t timeout] [-p ipv4_addr] [-r restart_device] [-T sleep_time] [-6] [-m] [-n] [-c] [-l] [-h] [-v] login_id login_password\n" "$0"
 	printf "Options:\n"
 	printf "\t-i interface\tSpecify the network interface. Default is '%s'.\n" "$interface"
 	printf "\t-I isp\t\tSpecify ISP. Default is '%s'.\n" "$isp"
 	printf "\t-t timeout\tSpecify the timeout for requests. Default is %d seconds.\n" "$timeout"
 	printf "\t-p ipv4_addr\tSpecify the IPv4 address. By default it will be detected automatically.\n"
 	printf "\t-r restart_device\trestart the specify device before login(Only on Wrt). Default is empty.\n"
-	printf "\t-r sleep_time\tstart login after restarting the device. Default is 1s.\n"
+	printf "\t-T sleep_time\tstart login after restarting the device. Default is %d sec.\n" "$sleep_time"
 	printf "\t-6\t\tAttempt to recover IPv6 availability using CERNET IPv6 address. Default is %d (0 for ON, 1 for OFF).\n" "$loginv6"
-	printf "\t-m\t\tSwitch to logout mode. Default is %d (0 for ON, 1 for OFF).\n" "$logout_flag"
+	printf "\t-m\t\tEnable MAC detection policy (login only when MAC changes). Default is %d (0 for ON, 1 for OFF).\n" "$mac_detection"
 	printf "\t-n\t\tSwitch to time unlimited account. Default is %d (0 for UNLIMITED, 1 for LIMITED).\n" "$time_unlimited_account"
 	printf "\t-c\t\tSkip the network connectivity check before logging in. Default is %d (0 for SKIPPING, 1 for NOT).\n" "$skip_connectivity_test"
+	printf "\t-l\t\tLogout mode. Default is %d (0 for ON, 1 for OFF).\n" "$logout_flag"
 	printf "\t-h\t\tShow this help message.\n"
 	printf "\t-v\t\tVerbose mode. Default is %d (0 for ON, 1 for OFF).\n" "$verbose_mode"
 	printf "Arguments:\n"
@@ -231,6 +239,61 @@ get_ip_address() {
 	else
 		println_error "Invalid IP type. Please specify 'ipv4' or 'ipv6'."
 		return 1
+	fi
+}
+
+# Get current MAC address of the interface and store in global var `current_mac`
+get_mac_address() {
+	local mac=""
+	if [[ "$sysenv" == "Darwin" ]]; then
+		mac=$(ifconfig "$interface" 2>/dev/null | awk '/ether/{print $2; exit}')
+		# Fallback to networksetup if needed
+		if [[ -z "$mac" ]] && command -v networksetup >/dev/null 2>&1; then
+			mac=$(networksetup -getmacaddress "$interface" 2>/dev/null | awk '{print $3}')
+		fi
+	elif [[ "$sysenv" == "Linux" ]]; then
+		if [[ -r "/sys/class/net/$interface/address" ]]; then
+			mac=$(cat "/sys/class/net/$interface/address" 2>/dev/null)
+		else
+			mac=$(ip -o link show "$interface" 2>/dev/null | awk -F 'link/ether ' '{print $2}' | awk '{print $1}')
+			if [[ -z "$mac" ]]; then
+				mac=$(ifconfig "$interface" 2>/dev/null | awk '/ether/{print $2; exit}')
+			fi
+		fi
+	fi
+
+	if [[ -z "$mac" ]]; then
+		println_warning "Unable to determine MAC address for interface $interface."
+	else
+		current_mac="$mac"
+		println_info "Current MAC on $interface: $current_mac"
+	fi
+}
+
+# Initialize state dir and file for MAC persistence
+setup_state_storage() {
+	local base="${XDG_STATE_HOME:-$HOME/.local/state}"
+	state_dir="$base/njupt-auto-login"
+	# Fallback if HOME or base is unusable
+	if [[ -z "$HOME" ]]; then
+		state_dir="/tmp/njupt-auto-login"
+	fi
+	mkdir -p "$state_dir" 2>/dev/null || true
+	mac_state_file="$state_dir/${interface}.mac"
+}
+
+load_last_mac() {
+	if [[ -f "$mac_state_file" ]]; then
+		last_mac=$(head -n 1 "$mac_state_file" 2>/dev/null | tr -d '\r\n')
+		if [[ -n "$last_mac" ]]; then
+			println_info "Last MAC on $interface: $last_mac"
+		fi
+	fi
+}
+
+save_current_mac() {
+	if [[ -n "$current_mac" ]]; then
+		printf "%s\n" "$current_mac" > "$mac_state_file" 2>/dev/null || true
 	fi
 }
 
@@ -400,7 +463,6 @@ connectivity_test() {
 	if [[ "$test_type" == "v4" ]]; then
 		case $(curl --interface "$interface" -4 -k -s --max-time "$timeout" -X GET -w "%{http_code}" "http://connect.rom.miui.com/generate_204") in
 			204)
-				println_ok "Successfully connected to the Internet."
 				return 0
 				;;
 			301|302)
@@ -465,6 +527,14 @@ main() {
 	println_info "Account Type: ${BOLD}$( [ $time_unlimited_account -eq 0 ] && echo 'UNLIMITED' || echo 'LIMITED' )${RESET}"
 	println_info "Logout flag: ${BOLD}$( [ $logout_flag -eq 0 ] && echo 'ON' || echo 'OFF' )${RESET}"
 	println_info "CERNET IPv6 login: ${BOLD}$( [ $loginv6 -eq 0 ] && echo 'ON' || echo 'OFF' )${RESET}"
+	println_info "MAC detection: ${BOLD}$( [ $mac_detection -eq 0 ] && echo 'ON' || echo 'OFF' )${RESET}"
+
+	# Prepare MAC persistence and read last MAC (only when MAC detection enabled)
+	if [[ $mac_detection -eq 0 ]]; then
+		setup_state_storage
+		get_mac_address
+		load_last_mac
+	fi
 
 	if check_openwrt; then
 		println_info "Running on OpenWrt. Skipping Wi-Fi check."
@@ -495,42 +565,85 @@ main() {
 			fi
 		fi
 	fi
+
 	if [[ "$restart_device" != "" ]]; then
-    	try_restart_device
+    try_restart_device
+  fi
+
+	# Combined decision: only login when MAC changed since last time AND connectivity is down (when MAC detection enabled)
+	local connected=1
+	if [[ $skip_connectivity_test -eq 1 ]]; then
+		if connectivity_test "v4"; then
+			connected=1
+		else
+			connected=0
+		fi
+	else
+		println_info "Connectivity check skipped by -c option."
+		connected=0
 	fi
-	if [[ $skip_connectivity_test -eq 1 ]] && connectivity_test "v4"; then
+
+	# Decide MAC change status (treat missing last_mac as changed) when enabled
+	if [[ $mac_detection -eq 0 ]]; then
+		if [[ -z "$last_mac" ]] || [[ -n "$current_mac" && "$current_mac" != "$last_mac" ]]; then
+			mac_changed_flag=1
+			println_info "MAC change detected or no previous MAC recorded."
+		else
+			mac_changed_flag=0
+			println_info "MAC unchanged since last run."
+		fi
+	fi
+
+	if [[ $connected -eq 1 ]]; then
 		println_ok "Successfully connected to the Internet."
 		print_success
+		# Save MAC for persistence (when enabled)
+		if [[ $mac_detection -eq 0 ]]; then
+			save_current_mac
+		fi
 		if [[ $loginv6 -eq 0 ]]; then
 			println_info "Recovering IPv6 availability..."
 			network_login_ipv6
 		fi
 	else
-		if [[ $time_unlimited_account -eq 1 ]]; then
-			println_info "Time limited account. Checking the time..."
-			if check_time; then
-				println_ok "Time is within the range."
-			else
-				println_error "Time is out of range."
-				println_error "The script will exit with no changes made."
-				exit 1
+		if [[ $mac_detection -eq 1 ]] || [[ $mac_changed_flag -eq 1 ]]; then
+			# Optional time window check before attempting login
+			if [[ $time_unlimited_account -eq 1 ]]; then
+				println_info "Time limited account. Checking the time..."
+				if check_time; then
+					println_ok "Time is within the range."
+				else
+					println_error "Time is out of range."
+					println_error "The script will exit with no changes made."
+					exit 1
+				fi
 			fi
-		fi
 
-		if network_login; then
-			if connectivity_test "v4"; then
-				println_ok "Successfully connected to the Internet."
-				print_success
-				if [[ $loginv6 -eq 0 ]]; then
-					println_info "Recovering IPv6 availability..."
-					network_login_ipv6
+			if network_login; then
+				if connectivity_test "v4"; then
+					println_ok "Successfully connected to the Internet."
+					print_success
+					# Save MAC after successful login (when enabled)
+					if [[ $mac_detection -eq 0 ]]; then
+						save_current_mac
+					fi
+					if [[ $loginv6 -eq 0 ]]; then
+						println_info "Recovering IPv6 availability..."
+						network_login_ipv6
+					fi
+				else
+					println_error "Failed to connect to the Internet."
+					print_fail
 				fi
 			else
-				println_error "Failed to connect to the Internet."
 				print_fail
 			fi
 		else
-			print_fail
+			println_warning "Connectivity is down but MAC unchanged; per policy, skipping login request."
+			# Still update persisted MAC if obtained (when enabled)
+			if [[ $mac_detection -eq 0 ]]; then
+				save_current_mac
+			fi
 		fi
 	fi
 	println_info "All jobs done. The script will exit."
@@ -540,7 +653,7 @@ main() {
 
 # init options
 # must be done before calling main
-while getopts ':i:I:t:p:r:T:6mnchvr' OPT; do
+while getopts ':i:I:t:p:r:T:6mnclhv' OPT; do
 	case $OPT in
 	i) interface="$OPTARG" ;;
 	I) isp="$OPTARG" ;;
@@ -549,9 +662,10 @@ while getopts ':i:I:t:p:r:T:6mnchvr' OPT; do
 	r) restart_device="$OPTARG";;
 	T) sleep_time="$OPTARG";;
 	6) loginv6=0 ;;
-	m) logout_flag=0 ;;
+	m) mac_detection=0 ;;
 	n) time_unlimited_account=0 ;;
 	c) skip_connectivity_test=0 ;;
+	l) logout_flag=0 ;;
 	h) help ;;
 	v) verbose_mode=0 ;;
 	:)
