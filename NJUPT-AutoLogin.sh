@@ -326,21 +326,21 @@ generate_account_password() {
 	println_info "Generating account & password parameters..."
 	if [[ "$isp" == "ctcc" ]]; then
 		println_info "Your ISP is China Telecom."
-		user_account="%2C0%2C${login_id}%40njxy"
+		user_account=",0,${login_id}@njxy"
 	elif [[ "$isp" == "cmcc" ]]; then
 		println_info "Your ISP is China Mobile."
-		user_account="%2C0%2C${login_id}%40cmcc"
+		user_account=",0,${login_id}@cmcc"
 	elif [[ "$isp" == "njupt" ]]; then
 		println_info "Your ISP is NJUPT."
-		user_account="%2C0%2C${login_id}"
+		user_account=",0,${login_id}"
 	else
 		println_error "Invalid ISP. Please specify 'ctcc', 'cmcc' or 'njupt'."
 		println_error "The script will exit with no changes made."
 		exit 1
 	fi
-	println_ok "URL account parameters: $user_account"
+	println_ok "Account parameters: $user_account"
 	user_password=$login_pw
-	println_ok "URL password parameters: $user_password"
+	println_ok "Password parameters: [HIDDEN]"
 }
 
 network_login() {
@@ -350,10 +350,35 @@ network_login() {
 	else
 		println_info "Using the specified IPv4 address: $ipv4_addr"
 	fi
-	response=$(curl --interface "$interface" -s -k --max-time "$timeout" --request GET "https://10.10.244.11:802/eportal/portal/login?callback=dr1003&login_method=1&user_account=$user_account&user_password=$user_password&wlan_user_ip=$ipv4_addr")
+	response=$(curl --interface "$interface" -s -k --max-time "$timeout" --get \
+		--data-urlencode "callback=dr1003" \
+		--data-urlencode "login_method=1" \
+		--data-urlencode "user_account=$user_account" \
+		--data-urlencode "user_password=$user_password" \
+		--data-urlencode "wlan_user_ip=$ipv4_addr" \
+		"https://10.10.244.11:802/eportal/portal/login")
 	if [[ "$response" =~ "成功" ]]; then
 		println_ok "Login successful!"
 		return 0
+	elif [[ "$isp" == "cmcc" ]]; then
+		println_warning "Login with account suffix '@cmcc' failed. Trying CMCC fallback formats..."
+		for fallback_account in ",0,${login_id}@njxy" ",0,${login_id}"; do
+			println_info "Trying account parameters: $fallback_account"
+			response=$(curl --interface "$interface" -s -k --max-time "$timeout" --get \
+				--data-urlencode "callback=dr1003" \
+				--data-urlencode "login_method=1" \
+				--data-urlencode "user_account=$fallback_account" \
+				--data-urlencode "user_password=$user_password" \
+				--data-urlencode "wlan_user_ip=$ipv4_addr" \
+				"https://10.10.244.11:802/eportal/portal/login")
+			if [[ "$response" =~ "成功" ]]; then
+				println_ok "Login successful!"
+				return 0
+			fi
+		done
+		println_error "Login failed!"
+		println_info "Response: $response"
+		return 1
 	else
 		println_error "Login failed!"
 		println_info "Response: $response"
