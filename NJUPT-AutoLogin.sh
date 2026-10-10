@@ -350,7 +350,7 @@ network_login() {
 	else
 		println_info "Using the specified IPv4 address: $ipv4_addr"
 	fi
-	response=$(curl --interface "$interface" -s -k --max-time "$timeout" --request GET "https://10.10.244.11:802/eportal/portal/login?callback=dr1003&login_method=1&user_account=$user_account&user_password=$user_password&wlan_user_ip=$ipv4_addr")
+	response=$(curl --interface "$interface" -s -k --max-time "$timeout" --request GET "https://10.10.244.11:802/eportal/portal/login?callback=dr1003&login_method=1&user_account=$user_account&user_password=$user_password&wlan_user_ip=$ipv4_addr&wlan_user_ipv6=&enable_r3=0")
 	if [[ "$response" =~ "成功" ]]; then
 		println_ok "Login successful!"
 		return 0
