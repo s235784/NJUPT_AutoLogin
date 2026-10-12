@@ -90,14 +90,12 @@ Linux 使用此脚本前需要检查以下依赖是否安装：
 
 下载 [Releases](https://github.com/s235784/NJUPT_AutoLogin/releases) 中的脚本，上传到路由器中。
 
-进入路由器后台，记住首页出现的 **IPv4 WAN 状态** 中的 **`eth0.x`**，例如我这里是 `eth0.2`。
-
-![readme_openwrt_eth](doc/readme_openwrt_eth.png)
+脚本已支持自动检测 OpenWrt 的 WAN 接口名称（如 `wan` 或 `eth0.x`），通常情况下**无需手动指定 `-i` 参数**。
 
 在路由器的计划任务中添加以下命令，并根据实际情况修改这条命令（复杂的密码请用 `"` 括起来）：
 
 ```crontab
-*/5 * * * * bash /path/to/your/NJUPT-AutoLogin.sh [-i interface] [-I isp] [-t timeout] [-p ipv4_addr] [-r restart_device] [-T sleep_time] [-6] [-m] [-n] [-c] [-l] [-v] login_id login_password
+*/5 * * * * bash /path/to/your/NJUPT-AutoLogin.sh [-I isp] [-t timeout] [-p ipv4_addr] [-r restart_device] [-T sleep_time] [-6] [-m] [-n] [-c] [-l] [-v] login_id login_password
 ```
 
 确认无误后保存。之后路由器就会每 5 分钟确认一次网络状态，如果允许登录时间内没有登录校园网，路由器就会自动尝试登录了。
