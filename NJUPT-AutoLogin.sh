@@ -21,20 +21,20 @@
 
 # Terminal check for colored output
 if [[ -t 1 ]]; then
-  # ANSI color and style codes
-  BOLD=$(printf '\033[1m')
-  RED=$(printf '\033[31m')
-  GREEN=$(printf '\033[32m')
-  YELLOW=$(printf '\033[33m')
-  BLUE=$(printf '\033[34m')
-  RESET=$(printf '\033[0m')
+	# ANSI color and style codes
+	BOLD=$(printf '\033[1m')
+	RED=$(printf '\033[31m')
+	GREEN=$(printf '\033[32m')
+	YELLOW=$(printf '\033[33m')
+	BLUE=$(printf '\033[34m')
+	RESET=$(printf '\033[0m')
 else
-  BOLD=""
-  RED=""
-  GREEN=""
-  YELLOW=""
-  BLUE=""
-  RESET=""
+	BOLD=""
+	RED=""
+	GREEN=""
+	YELLOW=""
+	BLUE=""
+	RESET=""
 fi
 
 sysenv="$(uname)"
@@ -356,7 +356,7 @@ network_login() {
 		--data-urlencode "user_account=$user_account" \
 		--data-urlencode "user_password=$user_password" \
 		--data-urlencode "wlan_user_ip=$ipv4_addr" \
-    --data-urlencode "wlan_user_ipv6=" \
+		--data-urlencode "wlan_user_ipv6=" \
 		--data-urlencode "enable_r3=0" \
 		"https://10.10.244.11:802/eportal/portal/login")
 	if [[ "$response" =~ "成功" ]]; then
@@ -372,8 +372,8 @@ network_login() {
 				--data-urlencode "user_account=$fallback_account" \
 				--data-urlencode "user_password=$user_password" \
 				--data-urlencode "wlan_user_ip=$ipv4_addr" \
-        --data-urlencode "wlan_user_ipv6=" \
-		    --data-urlencode "enable_r3=0" \
+				--data-urlencode "wlan_user_ipv6=" \
+				--data-urlencode "enable_r3=0" \
 				"https://10.10.244.11:802/eportal/portal/login")
 			if [[ "$response" =~ "成功" ]]; then
 				println_ok "Login successful!"
@@ -588,8 +588,8 @@ main() {
 	fi
 
 	if [[ "$restart_device" != "" ]]; then
-    try_restart_device
-  fi
+		try_restart_device
+	fi
 
 	# Combined decision: only login when MAC changed since last time AND connectivity is down (when MAC detection enabled)
 	local connected=1
