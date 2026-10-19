@@ -71,6 +71,8 @@ Linux 使用此脚本前需要检查以下依赖是否安装：
 
 ## 更新日志
 
+- 2026.10.10 适配 2026 年 9 月更新的校园网接口 [@MissionSbinnala](https://github.com/MissionSbinnala)
+- 2026.03.16 修复 URL 编码问题以及适配 `cmcc` 账号后缀规则 [@KansChen](https://github.com/KansChen)
 - 2025.09.09 添加 MAC 地址检测，避免因网络波动重复登陆导致掉线 [@Symb0x76](https://github.com/Symb0x76)
 - 2025.04.28 添加重启网络设备再登录的选项 [@RunawayRanger](https://github.com/RunawayRanger)
 - 2025.04.18 更换连通性测试链接地址 [@Glucy2](https://github.com/Glucy-2)
