@@ -14,7 +14,7 @@
 #                                      |___/
 #
 #    Repository: https://github.com/s235784/NJUPT_AutoLogin
-#    Version: 1.2.2
+#    Version: 1.2.3
 #
 #    Example of usage:
 #    bash NJUPT-AutoLogin.sh -i en0 -I ctcc -t 2 B21010101 12345678
@@ -338,9 +338,7 @@ generate_account_password() {
 		println_error "The script will exit with no changes made."
 		exit 1
 	fi
-	println_ok "Account parameters: $user_account"
 	user_password=$login_pw
-	println_ok "Password parameters: [HIDDEN]"
 }
 
 network_login() {
@@ -539,7 +537,6 @@ main() {
 
 	println_info "Parsing the options..."
 	println_info "User ID: ${BOLD}$login_id${RESET}"
-	println_info "User Password: ${BOLD}$login_pw${RESET}"
 	println_info "ISP: ${BOLD}$isp${RESET}"
 	println_info "Interface: ${BOLD}$interface${RESET}"
 	if [[ -n $ipv4_addr ]]; then
