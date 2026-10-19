@@ -356,6 +356,8 @@ network_login() {
 		--data-urlencode "user_account=$user_account" \
 		--data-urlencode "user_password=$user_password" \
 		--data-urlencode "wlan_user_ip=$ipv4_addr" \
+    --data-urlencode "wlan_user_ipv6=" \
+		--data-urlencode "enable_r3=0" \
 		"https://10.10.244.11:802/eportal/portal/login")
 	if [[ "$response" =~ "成功" ]]; then
 		println_ok "Login successful!"
@@ -370,6 +372,8 @@ network_login() {
 				--data-urlencode "user_account=$fallback_account" \
 				--data-urlencode "user_password=$user_password" \
 				--data-urlencode "wlan_user_ip=$ipv4_addr" \
+        --data-urlencode "wlan_user_ipv6=" \
+		    --data-urlencode "enable_r3=0" \
 				"https://10.10.244.11:802/eportal/portal/login")
 			if [[ "$response" =~ "成功" ]]; then
 				println_ok "Login successful!"
