@@ -41,7 +41,29 @@ sysenv="$(uname)"
 login_id=""
 login_pw=""
 isp="ctcc"
-interface="en0"
+
+get_default_interface() {
+	local def_if="eth0"
+	if [[ -f "/etc/os-release" ]]; then
+		# shellcheck source=/dev/null
+		. /etc/os-release
+		if [[ "$NAME" == "OpenWrt" ]] || [[ "$NAME" == "ImmortalWrt" ]]; then
+			if command -v uci >/dev/null 2>&1; then
+				local wan_if
+				wan_if=$(uci -q get network.wan.device)
+				if [[ -z "$wan_if" ]]; then
+					wan_if=$(uci -q get network.wan.ifname)
+				fi
+				if [[ -n "$wan_if" ]]; then
+					def_if="$wan_if"
+				fi
+			fi
+		fi
+	fi
+	printf "%s" "$def_if"
+}
+
+interface=$(get_default_interface)
 timeout=2
 time_unlimited_account=1
 logout_flag=1
